@@ -1,4 +1,4 @@
-globals [agression_level max-age]
+globals [max_age max_refugee_number total_refugee_number aux]
 
 breed [refugees refugee] ;; breed or shape in turtle?
 breed [countries country]
@@ -10,15 +10,24 @@ refugees-own[age gender race]
 to setup
   clear-all
 
-  set agression_level 5
-  set max-age 100
+  setup-refugees
+  setup-countries
 
-  ask refugees [set age random max-age]
+  reset-ticks
+end
 
+to setup-refugees
+  set max_age 100
+  set max_refugee_number 10000
+  set total_refugee_number 0
 
-  create-countries 10 [set color red]
+end
 
-   reset-ticks
+to setup-countries
+  create-countries 10 [
+    set color red
+    set shape "box"
+  ]
 end
 
 ;; called every tick
@@ -31,14 +40,22 @@ end
 
 ;; "creates" the refugees
 to new-refugees
-  create-refugees random 5 [set color blue]
+  if total_refugee_number < max_refugee_number [
+    set aux random ((max_refugee_number - total_refugee_number) * 0.00001 * agression_level)
+    create-refugees aux [
+      set color blue
+      set shape "person"
+    ]
+    set total_refugee_number total_refugee_number + aux
+  ]
+  set aux 0
 end
 
 ;; moves the refugees
 to move-refugees
   ask refugees [
     right random 360
-    forward 1
+    forward 0.1
   ]
 end
 
@@ -111,6 +128,21 @@ NIL
 NIL
 NIL
 0
+
+SLIDER
+13
+98
+185
+131
+agression_level
+agression_level
+0
+100
+100.0
+1
+1
+NIL
+HORIZONTAL
 
 @#$#@#$#@
 ## WHAT IS IT?
