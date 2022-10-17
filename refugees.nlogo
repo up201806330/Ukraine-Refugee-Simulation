@@ -1,10 +1,34 @@
-globals [max_age max_refugee_number total_refugee_number aux]
+globals [
+  max_age
+  max_refugee_number
+  total_refugee_number
+  aux
+  color_list
+  population_list
+  total_population
+  ;total_GDP
+  ;GDP_list
+  acceptance_ratio_list
+  max_population
+  min_population
+]
 
 breed [refugees refugee]
 breed [countries country]
 
-countries-own[policy_generosity accepted_number population_openness]
-refugees-own[age gender race]
+countries-own[
+  policy_generosity
+  accepted_number
+  population_openness
+  population
+  max_refugees
+]
+
+refugees-own[
+  age
+  gender
+  race
+]
 
 
 to setup
@@ -18,15 +42,61 @@ end
 
 to setup-refugees
   set max_age 100
-  set max_refugee_number 10000
+  set max_refugee_number population_disaster_country
   set total_refugee_number 0
 
 end
 
 to setup-countries
-  create-countries 10 [
-    set color red
+  set max_population 50000
+  set min_population 2500
+  set color_list []
+  set population_list []
+  ;set GDP_list []
+
+
+  ask n-of number_receiving_countires patches with [
+    distancexy 0 0 > 4 and abs pxcor < (max-pxcor - 1) and
+    abs pycor < (max-pycor - 1)
+  ] [
+    ; randomly placing hives around the center in the
+    ; view with a minimum distance of 16 from the center
+    set population_list lput (min_population + (random (max_population - min_population))) population_list
+    set color_list lput ((3 + random-float 6) + (10 * random 14)) color_list
+    ;set GDP_list lput (32 + random (277 - 32)) GDP_list
+    sprout-countries 1 [
+      set shape "box"
+      set size 2
+      ;set policy_generosity 0
+      ;set accepted_number 0
+      ;set population_openness false
+    ]
+  ]
+  set total_population sum population_list
+
+  let i 0 ; assign quality and plot pens to each hive
+  repeat count countries [
+    ask country i [
+      set population item i population_list
+      set color item i color_list
+      set max_refugees round (population / total_population * population_disaster_country)
+      set label max_refugees
+    ]
+    ;set-current-plot "on-site"
+    ;create-temporary-plot-pen word "site" i
+    ;set-plot-pen-color item i color-list
+    ;set-current-plot "committed"
+    ;create-temporary-plot-pen word "target" i
+    ;set-plot-pen-color item i color-list
+    set i i + 1
+  ]
+  create-countries 1 [
     set shape "box"
+    set size 2
+    set population population_disaster_country
+    set color ((3 + random-float 6) + (10 * random 14))
+    set max_refugees 0
+    set label population
   ]
 end
 
@@ -69,9 +139,9 @@ to review-policies
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
-210
+266
 10
-647
+703
 448
 -1
 -1
@@ -96,10 +166,10 @@ ticks
 30.0
 
 BUTTON
-6
-12
-69
-45
+28
+99
+91
+132
 NIL
 setup
 NIL
@@ -113,10 +183,10 @@ NIL
 1
 
 BUTTON
+125
 100
-13
-163
-46
+188
+133
 NIL
 go
 T
@@ -130,16 +200,46 @@ NIL
 0
 
 SLIDER
-13
-98
-185
-131
+25
+143
+197
+176
 agression_level
 agression_level
 0
 100
 100.0
 1
+1
+NIL
+HORIZONTAL
+
+SLIDER
+15
+12
+212
+45
+number_receiving_countires
+number_receiving_countires
+0
+100
+11.0
+1
+1
+NIL
+HORIZONTAL
+
+SLIDER
+18
+54
+227
+87
+population_disaster_country
+population_disaster_country
+2500
+50000
+10000.0
+500
 1
 NIL
 HORIZONTAL
