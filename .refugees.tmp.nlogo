@@ -90,7 +90,7 @@ to setup-countries
       set population_openness ((random 75) + 25)
       set first_update False
       set second_update False
-      set accepted_number 1
+
     ]
     ;set-current-plot "on-site"
     ;create-temporary-plot-pen word "site" i
@@ -107,7 +107,6 @@ to setup-countries
     set color ((3 + random-float 6) + (10 * random 14))
     set max_refugees 0
     set label population
-    set accepted_number 1
 
   ]
 end
@@ -290,7 +289,7 @@ agression_level
 agression_level
 0
 100
-30.0
+32.0
 1
 1
 NIL
