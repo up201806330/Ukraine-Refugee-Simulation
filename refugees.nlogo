@@ -25,6 +25,7 @@ countries-own[
   population_openness
   population
   max_refugees
+  generator ;; the country who generates the refugees
 ]
 
 refugees-own[
@@ -105,10 +106,9 @@ to setup-countries
     set size 2
     set population population_disaster_country
     set color ((3 + random-float 6) + (10 * random 14))
-    set max_refugees 0
     set label population
     set accepted_number 1
-
+    set generator 1
   ]
 end
 
@@ -117,6 +117,7 @@ to go
   new-refugees
   move-refugees
   review-policies
+  update-label
   tick
 end
 
@@ -157,49 +158,53 @@ to move-refugees
           ]
         ]
       ]
-      ifelse distance target_country < 0.25[
-        ;check accepted
-        set visited_countries lput target_country visited_countries
-        set target_country nobody
-        if one-of [true false][
-          set is_refugee false
-        ]
-      ][
-        face target_country
-        forward 0.1
-      ]
+      accept-refugee
     ]
   ]
 end
 
 ;; reviews country policies based on parameters
+;; might have a bug, not sure if sets for every country or not
 to review-policies
   ask countries [
-    if (max_refugees / accepted_number) > 0.5 [
-      if(first_update != True) [
-        set max_refugees (max_refugees * (population_openness / 100))
-        set first_update True
+    if generator = 0[
+      if (accepted_number / max_refugees) > 0.5 [
+        if(first_update != True) [
+          set max_refugees (max_refugees * (population_openness / 100))
+          set first_update True
+        ]
       ]
-    ]
-    if (max_refugees / accepted_number) > 0.75 [
-      if(second_update != True) [
-        set max_refugees (max_refugees * (population_openness / 100))
-        set second_update True
+      if (accepted_number / max_refugees) > 0.75 [
+        if(second_update != True) [
+          set max_refugees (max_refugees * (population_openness / 100))
+          set second_update True
+        ]
       ]
     ]
   ]
 end
 
 to accept-refugee
+  set aux 0
     ask refugees [
     if is_refugee[
+      if target_country = nobody[
+        stop
+      ]
       ifelse distance target_country < 0.25[
         ;check accepted
         set visited_countries lput target_country visited_countries
-        ;; loop over countries
-        ;;if target_country = i [
-
-        ;;]
+        ask target_country[
+          if accepted_number < max_refugees[
+            set aux 1
+            ;;set is_refugee false
+            set accepted_number accepted_number + 1
+          ]
+        ]
+        if aux = 1 [
+          set is_refugee false
+          set aux 0
+        ]
         set target_country nobody
       ][
         face target_country
@@ -207,16 +212,15 @@ to accept-refugee
       ]
     ]
   ]
+end
+
+to update-label
   ask countries [
-    if accepted_number < max_refugees [
-      set accepted_number (accepted_number + 1)
-      ;; and set the refugee to not refugee someho
+    if generator = 0[
+      set label round max_refugees - accepted_number + 1
     ]
   ]
 end
-
-
-
 
 
 @#$#@#$#@
@@ -290,7 +294,7 @@ agression_level
 agression_level
 0
 100
-30.0
+55.0
 1
 1
 NIL
