@@ -330,6 +330,23 @@ population_disaster_country
 NIL
 HORIZONTAL
 
+PLOT
+44
+214
+244
+364
+Accepted Refugees
+Time
+Number Accepted Refugees 
+0.0
+10.0
+0.0
+10.0
+true
+false
+"" "ask countries [\n  create-temporary-plot-pen (word who)\n  set-plot-pen-color color\n  plotxy ticks accepted_number\n]"
+PENS
+
 @#$#@#$#@
 ## WHAT IS IT?
 
