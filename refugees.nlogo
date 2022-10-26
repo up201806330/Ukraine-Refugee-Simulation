@@ -39,6 +39,8 @@ refugees-own[
   is_refugee
   target_country
   visited_countries
+  likeliness_of_staying
+  arrived
 ]
 
 
@@ -55,7 +57,7 @@ to setup-refugees
   set max_age 100
   set max_refugee_number population_disaster_country
   set total_refugee_number 0
-  set gender_list [ "Man" "Woman" "X"]
+  set gender_list ["Man" "Woman"]
   set distance_weight 10
   set openness_weight 5
 end
@@ -96,7 +98,7 @@ to setup-countries
     ask country i [
       set population item i population_list
       set color item i color_list
-      set max_refugees round (population / total_population * population_disaster_country) * 0.5
+      set max_refugees round (population / total_population * population_disaster_country * 0.5)
       set label max_refugees
       set population_openness ((random 30) + 70)
       set first_update False
@@ -126,6 +128,7 @@ end
 to go
   new-refugees
   move-refugees
+  review_refugees
   review-policies
   update-label
   tick
@@ -137,17 +140,50 @@ to new-refugees
     set aux random ((max_refugee_number - total_refugee_number) * 0.00001 * agression_level)
 
     create-refugees aux [
-      set color blue
+      set arrived false
       set shape "person"
-      set is_refugee one-of [true false]
+      set likeliness_of_staying random 100
+      ifelse likeliness_of_staying < agression_level[
+        set is_refugee true
+      ][
+        set is_refugee false
+      ]
+      set is_refugee one-of [true false] ;; change
       set age random max_age
       set gender one-of gender_list
       set target_country nobody
       set visited_countries []
+      ifelse gender = "Man"[
+        set color 105
+      ][
+        set color 135
+      ]
+      if age < 18[
+        set size 0.7
+      ]
+      if( mandatory_enrollment = true) and (gender = "Man") and (age > 18) and (age < 65) [
+        set is_refugee false
+      ]
     ]
     set total_refugee_number total_refugee_number + aux
   ]
   set aux 0
+end
+
+to review_refugees
+  ask refugees[
+    if not arrived and not is_refugee[
+      set likeliness_of_staying likeliness_of_staying - 0.1
+      ifelse likeliness_of_staying < agression_level[
+        set is_refugee true
+      ][
+        set is_refugee false
+      ]
+      if( mandatory_enrollment = true) and (gender = "Man") and (age > 18) and (age < 65) [
+        set is_refugee false
+      ]
+    ]
+  ]
 end
 
 ;; moves the refugees
@@ -202,6 +238,7 @@ to accept-refugee
         ]
         if aux = 1 [
           set is_refugee false
+          set arrived true
           set aux 0
         ]
         set target_country nobody
@@ -260,7 +297,6 @@ to update-label
 
   ]
 end
-
 @#$#@#$#@
 GRAPHICS-WINDOW
 266
@@ -332,7 +368,7 @@ agression_level
 agression_level
 0
 100
-55.0
+100.0
 1
 1
 NIL
@@ -402,6 +438,17 @@ true
 "" ""
 PENS
 "default" 1.0 0 -16777216 true "" "plot total_refugee_number"
+
+SWITCH
+752
+46
+934
+79
+mandatory_enrollment
+mandatory_enrollment
+0
+1
+-1000
 
 @#$#@#$#@
 ## WHAT IS IT?
