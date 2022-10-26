@@ -434,7 +434,7 @@ Num people
 0.0
 10.0
 true
-true
+false
 "" ""
 PENS
 "default" 1.0 0 -16777216 true "" "plot total_refugee_number"
