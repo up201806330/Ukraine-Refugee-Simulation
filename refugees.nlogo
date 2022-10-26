@@ -26,7 +26,7 @@ countries-own[
   second_update
   policy_generosity
   accepted_number
-  population_openness
+  population_unreceptiveness
   population
   max_refugees
   generator ;; the country who generates the refugees
@@ -88,7 +88,7 @@ to setup-countries
       set size 2
       ;set policy_generosity 0
       ;set accepted_number 0
-      ;set population_openness false
+      ;set population_unreceptiveness false
     ]
   ]
   set total_population sum population_list
@@ -100,7 +100,7 @@ to setup-countries
       set color item i color_list
       set max_refugees round (population / total_population * population_disaster_country * 0.5)
       set label max_refugees
-      set population_openness ((random 30) + 70)
+      set population_unreceptiveness ((random 30) + 70)
       set first_update False
       set second_update False
       set accepted_number 1
@@ -205,13 +205,13 @@ to review-policies
     if generator = 0[
       if (accepted_number / max_refugees) > 0.5 [
         if(first_update != True) [
-          set max_refugees (max_refugees * (1 / (population_openness / 100)))
+          set max_refugees (max_refugees * (1 / (population_unreceptiveness / 100)))
           set first_update True
         ]
       ]
       if (accepted_number / max_refugees) > 0.75 [
         if(second_update != True) [
-          set max_refugees (max_refugees * (1 / (population_openness / 100)))
+          set max_refugees (max_refugees * (1 / (population_unreceptiveness / 100)))
           set second_update True
         ]
       ]
@@ -259,10 +259,10 @@ to choose_country
       let i 0
       let temp_visited_countries visited_countries
       ask countries[
-        let temp_openness population_openness
+        let temp_openness population_unreceptiveness
         let temp_gen generator
         ;ask country i[
-        ; set temp_openness population_openness
+        ; set temp_openness population_unreceptiveness
         ; set temp_gen generator
         ;]
         ifelse not (member? country i temp_visited_countries) and not (temp_gen = 1)[
