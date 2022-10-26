@@ -12,6 +12,10 @@ globals [
   max_population
   min_population
   gender_list
+  distance_weight
+  openness_weight
+  distance_list
+  openness_list
 ]
 
 breed [refugees refugee]
@@ -52,6 +56,8 @@ to setup-refugees
   set max_refugee_number population_disaster_country
   set total_refugee_number 0
   set gender_list [ "Man" "Woman" "X"]
+  set distance_weight 10
+  set openness_weight 5
 end
 
 to setup-countries
@@ -59,6 +65,8 @@ to setup-countries
   set min_population 2500
   set color_list []
   set population_list []
+  set openness_list []
+  set distance_list []
   ;set GDP_list []
 
 
@@ -70,6 +78,8 @@ to setup-countries
     ; view with a minimum distance of 16 from the center
     set population_list lput (min_population + (random (max_population - min_population))) population_list
     set color_list lput ((3 + random-float 6) + (10 * random 14)) color_list
+    set openness_list lput 1 openness_list
+    set distance_list lput 1 distance_list
     ;set GDP_list lput (32 + random (277 - 32)) GDP_list
     sprout-countries 1 [
       set shape "box"
@@ -86,9 +96,9 @@ to setup-countries
     ask country i [
       set population item i population_list
       set color item i color_list
-      set max_refugees round (population / total_population * population_disaster_country)
+      set max_refugees round (population / total_population * population_disaster_country) * 0.5
       set label max_refugees
-      set population_openness ((random 75) + 25)
+      set population_openness ((random 30) + 70)
       set first_update False
       set second_update False
       set accepted_number 1
@@ -102,7 +112,7 @@ to setup-countries
     set i i + 1
   ]
   create-countries 1 [
-    set shape "box"
+    set shape "house"
     set size 2
     set population population_disaster_country
     set color ((3 + random-float 6) + (10 * random 14))
@@ -145,18 +155,7 @@ to move-refugees
   ask refugees [
     if is_refugee[
       if target_country = nobody[
-        let i 0
-        loop[
-          let temp_target_country one-of countries
-          if not (member? temp_target_country visited_countries) [
-            set target_country temp_target_country
-            stop
-          ]
-          set i (i + 1)
-          if i >= number_receiving_countries[
-            stop
-          ]
-        ]
+        choose_country
       ]
       accept-refugee
     ]
@@ -170,13 +169,13 @@ to review-policies
     if generator = 0[
       if (accepted_number / max_refugees) > 0.5 [
         if(first_update != True) [
-          set max_refugees (max_refugees * (population_openness / 100))
+          set max_refugees (max_refugees * (1 / (population_openness / 100)))
           set first_update True
         ]
       ]
       if (accepted_number / max_refugees) > 0.75 [
         if(second_update != True) [
-          set max_refugees (max_refugees * (population_openness / 100))
+          set max_refugees (max_refugees * (1 / (population_openness / 100)))
           set second_update True
         ]
       ]
@@ -214,14 +213,53 @@ to accept-refugee
   ]
 end
 
-to update-label
-  ask countries [
-    if generator = 0[
-      set label round max_refugees - accepted_number + 1
+to choose_country
+  ask refugees [
+   if is_refugee[
+
+      let desired_list []
+      ;let temp_open_list openness_list
+      let i 0
+      let temp_visited_countries visited_countries
+      ask countries[
+        let temp_openness population_openness
+        let temp_gen generator
+        ;ask country i[
+        ; set temp_openness population_openness
+        ; set temp_gen generator
+        ;]
+        ifelse not (member? country i temp_visited_countries) and not (temp_gen = 1)[
+          let value sqrt(distance_weight * (distance country i) * (distance country i) + openness_weight * (temp_openness) * (temp_openness))
+          ;show value
+          set desired_list lput value desired_list
+         ][
+            set desired_list lput 1000 desired_list
+         ]
+        set i i + 1
+        ;if i >= number_receiving_countries[
+        ;  continue
+        ;]
+      ]
+
+
+      let min_desired min desired_list
+      let index_desired position min_desired desired_list
+      set target_country country index_desired
     ]
   ]
+
 end
 
+to update-label
+  ask countries [
+    ifelse generator = 0[
+      set label round max_refugees - accepted_number + 1
+    ][
+      set label round max_refugee_number - total_refugee_number
+    ]
+
+  ]
+end
 
 @#$#@#$#@
 GRAPHICS-WINDOW
@@ -346,6 +384,24 @@ true
 false
 "" "ask countries [\n  create-temporary-plot-pen (word who)\n  set-plot-pen-color color\n  plotxy ticks accepted_number\n]"
 PENS
+
+PLOT
+826
+94
+1026
+244
+Population disaster country
+time
+Num people
+0.0
+10.0
+0.0
+10.0
+true
+true
+"" ""
+PENS
+"default" 1.0 0 -16777216 true "" "plot total_refugee_number"
 
 @#$#@#$#@
 ## WHAT IS IT?
