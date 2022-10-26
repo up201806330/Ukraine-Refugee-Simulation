@@ -326,10 +326,10 @@ ticks
 30.0
 
 BUTTON
-28
-99
-91
-132
+16
+51
+79
+84
 NIL
 setup
 NIL
@@ -343,10 +343,10 @@ NIL
 1
 
 BUTTON
-125
-100
-188
-133
+113
+52
+176
+85
 NIL
 go
 T
@@ -360,10 +360,10 @@ NIL
 0
 
 SLIDER
-25
-143
-197
-176
+753
+86
+925
+119
 agression_level
 agression_level
 0
@@ -390,25 +390,25 @@ NIL
 HORIZONTAL
 
 SLIDER
-18
-54
-227
-87
+21
+502
+221
+535
 population_disaster_country
 population_disaster_country
 2500
 50000
-8000.0
+2500.0
 500
 1
 NIL
 HORIZONTAL
 
 PLOT
-44
-214
-244
-364
+26
+190
+226
+361
 Accepted Refugees
 Time
 Number Accepted Refugees 
@@ -417,16 +417,16 @@ Number Accepted Refugees
 0.0
 10.0
 true
-false
+true
 "" "ask countries [\n  create-temporary-plot-pen (word who)\n  set-plot-pen-color color\n  plotxy ticks accepted_number\n]"
 PENS
 
 PLOT
-826
-94
-1026
-244
-Population disaster country
+21
+539
+221
+689
+Refugee number
 time
 Num people
 0.0
