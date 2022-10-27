@@ -1,4 +1,7 @@
 globals [
+  ; interface
+  show_family_links?
+
   max_age
   max_refugee_number
   total_refugees_departed
@@ -17,8 +20,15 @@ globals [
   openness_list
 ]
 
+;; agents
 breed [refugees refugee]
 breed [countries country]
+
+;; refugee agent links
+undirected-link-breed [family-links family-link]
+family-links-own [
+  separated?
+]
 
 countries-own[
   first_update
@@ -28,7 +38,7 @@ countries-own[
   population_unreceptiveness
   population
   max_refugees
-  generator ;; the country who generates the refugees
+  generator ; the country who generates the refugees
 ]
 
 refugees-own[
@@ -39,7 +49,8 @@ refugees-own[
   target_country
   visited_countries
   likeliness_of_staying
-
+  family_size
+  family_remaining
   arrived
 ]
 
@@ -49,10 +60,14 @@ to setup
 
   setup-refugees
   setup-countries
-
-  new-refugees
+  setup-interface
 
   reset-ticks
+end
+
+to setup-interface
+  set show_family_links? false
+  Toggle-links
 end
 
 to setup-refugees
@@ -62,6 +77,8 @@ to setup-refugees
   set gender_list ["Man" "Woman"]
   set distance_weight 10
   set openness_weight 5
+
+  new-refugees
 end
 
 to setup-countries
@@ -138,15 +155,17 @@ end
 ;; "creates" the refugees
 to new-refugees
   create-refugees max_refugee_number [
-    ;properties
+    ; properties
     set arrived false
     set likeliness_of_staying random 100
     set age random max_age
     set gender one-of gender_list
     set target_country nobody
     set visited_countries []
+    set family_size max list ((random max_family_size * 2) - max_family_size) 0
+    set family_remaining family_size
 
-    ;visuals
+    ; visuals
     set shape "person"
     ifelse gender = "Man"[
       set color 105
@@ -157,7 +176,7 @@ to new-refugees
       set size 0.7
     ]
 
-    ;first tick of updating properties
+    ; first tick of updating properties
     ifelse likeliness_of_staying < agression_level[
       set is_moving true
     ][
@@ -167,14 +186,33 @@ to new-refugees
       set is_moving false
     ]
   ]
+
+  ; creating family links between refugees
+  ask refugees[
+    ; select n random refugees, create links and update their remaining family_size
+    let possible_family_members other refugees with [family_remaining > 0]
+
+    ; if no more people left with family to link, return
+    if count possible_family_members > 0[
+      set family_remaining 0
+
+      let random_refugees (n-of family_size possible_family_members)
+
+      create-family-links-with random_refugees
+      ask random_refugees [
+        set family_remaining family_remaining - 1
+      ]
+    ]
+  ]
 end
 
 to review_refugees
   ask refugees[
-    if not arrived and not is_moving[
-      ;set likeliness_of_staying likeliness_of_staying - 0.1
+    ; if refugee hasn't left yet
+    ifelse not arrived and not is_moving [
+      ; set likeliness_of_staying likeliness_of_staying - 0.1
       ifelse likeliness_of_staying < agression_level[
-        ;mandatory enrollment prevents young males from leaving
+        ; mandatory enrollment prevents young males from leaving
         ifelse ( mandatory_enrollment = true) and (gender = "Man") and (age > 18) and (age < 65) [
           set is_moving false
         ][
@@ -184,9 +222,24 @@ to review_refugees
       ][
         set is_moving false
       ]
+    ][
 
+      ; if refugee is moving, set separated property of family links
+      ;if is_moving [
+      ;  ask my-family-links [
+      ;    if is_moving [ ; if 2 members are moving, they won't be reunited in travel
+      ;      ; if both ends of the link have different target countries, they are separated
+      ;      if [target_country] of other-end != [target_country] of myself [
+      ;        set separated? true
+      ;      ]
+      ;
+      ;    ]
+      ;  ]
+      ;]
     ]
   ]
+
+  
 end
 
 ;; moves the refugees
@@ -243,6 +296,7 @@ to accept-refugee
           set is_moving false
           set arrived true
           set accepted 0
+          ; TODO remove separated connections where needed
         ]
         set target_country nobody
       ][
@@ -297,8 +351,17 @@ to update-label
     ][
       set label round max_refugee_number - total_refugees_departed
     ]
-
   ]
+end
+
+to toggle-show-family-links
+  ask family-links [
+    set hidden? not show_family_links?
+  ]
+end
+to Toggle-links
+  toggle-show-family-links
+  set show_family_links? (not show_family_links?)
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
@@ -429,7 +492,7 @@ PLOT
 539
 221
 689
-Refugee number
+Refugee Population
 time
 Num people
 0.0
@@ -445,13 +508,45 @@ PENS
 SWITCH
 752
 46
-934
+925
 79
 mandatory_enrollment
 mandatory_enrollment
 1
 1
 -1000
+
+SLIDER
+754
+124
+926
+157
+max_family_size
+max_family_size
+0
+5
+3.0
+1
+1
+NIL
+HORIZONTAL
+
+BUTTON
+15
+92
+132
+125
+Toggle-links
+Toggle-links
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+0
 
 @#$#@#$#@
 ## WHAT IS IT?
@@ -795,7 +890,7 @@ false
 Polygon -7500403 true true 270 75 225 30 30 225 75 270
 Polygon -7500403 true true 30 75 75 30 270 225 225 270
 @#$#@#$#@
-NetLogo 6.3.0
+NetLogo 6.0.4
 @#$#@#$#@
 @#$#@#$#@
 @#$#@#$#@
