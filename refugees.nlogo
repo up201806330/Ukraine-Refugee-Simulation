@@ -2,7 +2,6 @@ globals [
   max_age
   max_refugee_number
   total_refugees_departed
-  aux
   color_list
   population_list
   total_population
@@ -157,7 +156,7 @@ to new-refugees
     if age < 18[
       set size 0.7
     ]
-    
+
     ;first tick of updating properties
     ifelse likeliness_of_staying < agression_level[
       set is_moving true
@@ -180,12 +179,12 @@ to review_refugees
           set is_moving false
         ][
           set is_moving true
-          set total_refugees_departed total_refugees_departed+1
+          set total_refugees_departed total_refugees_departed + 1
         ]
       ][
         set is_moving false
       ]
-      
+
     ]
   ]
 end
@@ -224,7 +223,7 @@ to review-policies
 end
 
 to accept-refugee
-  set aux 0
+  let accepted 0
   ask refugees [
     if is_moving[
       if target_country = nobody[
@@ -235,15 +234,15 @@ to accept-refugee
         set visited_countries lput target_country visited_countries
         ask target_country[
           if accepted_number < max_refugees[
-            set aux 1
+            set accepted 1
             ;;set is_moving false
             set accepted_number accepted_number + 1
           ]
         ]
-        if aux = 1 [
+        if accepted = 1 [
           set is_moving false
           set arrived true
-          set aux 0
+          set accepted 0
         ]
         set target_country nobody
       ][
