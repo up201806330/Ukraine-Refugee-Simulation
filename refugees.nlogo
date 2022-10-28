@@ -16,10 +16,6 @@ globals [
   min_population
   gender_list
 
-  distance_weight
-  openness_weight
-  family_distance_weight
-
   first_refugee_wave
 ]
 
@@ -87,9 +83,6 @@ to setup-refugees
   set max_refugee_number refugee_population
   set total_refugees_departed 0
   set gender_list ["Man" "Woman"]
-  set distance_weight 10
-  set openness_weight 5
-  set family_distance_weight 30
 end
 
 to setup-countries
@@ -461,10 +454,10 @@ ticks
 30.0
 
 BUTTON
-16
-130
-212
-163
+17
+292
+213
+325
 NIL
 setup
 NIL
@@ -478,10 +471,10 @@ NIL
 1
 
 BUTTON
-48
-332
-220
-365
+49
+582
+223
+616
 NIL
 go
 T
@@ -495,10 +488,10 @@ NIL
 0
 
 SLIDER
-6
-291
-39
-441
+7
+540
+40
+690
 agression_level
 agression_level
 0
@@ -557,10 +550,10 @@ true
 PENS
 
 SWITCH
-48
-407
-222
-440
+49
+657
+223
+690
 mandatory_enrollment
 mandatory_enrollment
 0
@@ -583,10 +576,10 @@ NIL
 HORIZONTAL
 
 BUTTON
-48
-369
-221
-402
+49
+619
+222
+652
 Toggle-show-links
 Toggle-show-links
 NIL
@@ -633,6 +626,51 @@ false
 "" ""
 PENS
 "default" 1.0 0 -5825686 true "" "plot total_refugees_departed"
+
+SLIDER
+17
+129
+55
+281
+distance_weight
+distance_weight
+1
+50
+10.0
+1
+1
+NIL
+VERTICAL
+
+SLIDER
+63
+129
+101
+282
+openness_weight
+openness_weight
+1
+50
+5.0
+1
+1
+NIL
+VERTICAL
+
+SLIDER
+107
+129
+145
+282
+family_distance_weight
+family_distance_weight
+1
+50
+30.0
+1
+1
+NIL
+VERTICAL
 
 @#$#@#$#@
 ## WHAT IS IT?
