@@ -77,7 +77,7 @@ end
 
 to setup-refugees
   set max_age 100
-  set max_refugee_number population_disaster_country
+  set max_refugee_number refugee_population
   set total_refugees_departed 0
   set gender_list ["Man" "Woman"]
   set distance_weight 10
@@ -120,7 +120,7 @@ to setup-countries
     ask country i [
       set population item i population_list
       set color item i color_list
-      set max_refugees round (population / total_population * population_disaster_country * 0.5)
+      set max_refugees round (population / total_population * refugee_population * 0.5)
       set label max_refugees
       set population_unreceptiveness ((random 30) + 70)
       set first_update False
@@ -138,7 +138,7 @@ to setup-countries
   create-countries 1 [
     set shape "house"
     set size 2
-    set population population_disaster_country
+    set population refugee_population
     set color ((3 + random-float 6) + (10 * random 14))
     set label population
     set accepted_number 1
@@ -407,9 +407,9 @@ ticks
 
 BUTTON
 16
-95
+130
 212
-128
+163
 NIL
 setup
 NIL
@@ -442,7 +442,7 @@ NIL
 SLIDER
 6
 291
-43
+39
 441
 agression_level
 agression_level
@@ -470,12 +470,12 @@ NIL
 HORIZONTAL
 
 SLIDER
-21
-502
-221
-535
-population_disaster_country
-population_disaster_country
+14
+88
+214
+121
+refugee_population
+refugee_population
 2500
 50000
 2500.0
@@ -500,24 +500,6 @@ true
 true
 "" "ask countries [\n  create-temporary-plot-pen (word who)\n  set-plot-pen-color color\n  plotxy ticks accepted_number\n]"
 PENS
-
-PLOT
-21
-539
-221
-689
-Refugee Population
-time
-Num people
-0.0
-10.0
-0.0
-10.0
-true
-false
-"" ""
-PENS
-"default" 1.0 0 -16777216 true "" "plot total_refugees_departed"
 
 SWITCH
 48
