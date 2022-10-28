@@ -19,6 +19,8 @@ globals [
   distance_weight
   openness_weight
   family_distance_weight
+
+  first_refugee_wave
 ]
 
 ;; agents
@@ -63,16 +65,18 @@ refugees-own[
 
 to setup
   clear-all
+  reset-ticks
   setup-refugees
   setup-countries
   new-refugees
   setup-interface
+  update-label
 
   reset-ticks
 end
 
 to setup-interface
-  set show_family_links? true
+  set show_family_links? false
   Toggle-show-links
 
   set transparent [0 0 0 0]
@@ -187,6 +191,7 @@ to new-refugees
     ; first tick of updating properties
     ifelse likeliness_of_staying < agression_level[
       set moving? true
+      set total_refugees_departed total_refugees_departed + 1
     ][
       set moving? false
     ]
@@ -407,7 +412,11 @@ end
 to update-label
   ask countries [
     ifelse is_starting_country? [
-      set label round max_refugee_number - total_refugees_departed
+      ifelse ticks > 1[
+        set label round max_refugee_number - total_refugees_departed
+      ][
+        set label round max_refugee_number
+      ]
     ][
       set label round max_refugees - accepted_number + 1
     ]
@@ -494,7 +503,7 @@ agression_level
 agression_level
 0
 100
-10.0
+53.0
 1
 1
 NIL
@@ -554,7 +563,7 @@ SWITCH
 440
 mandatory_enrollment
 mandatory_enrollment
-0
+1
 1
 -1000
 
@@ -606,6 +615,24 @@ true
 true
 "" "ask countries [\n  create-temporary-plot-pen (word who)\n  set-plot-pen-color color\n  plotxy ticks reunions_number\n]"
 PENS
+
+PLOT
+649
+500
+837
+690
+Number of Departed Refugees
+Time
+Number of Refugees
+0.0
+10.0
+0.0
+10.0
+true
+false
+"" ""
+PENS
+"default" 1.0 0 -16777216 true "" "plot total_refugees_departed"
 
 @#$#@#$#@
 ## WHAT IS IT?
@@ -949,7 +976,7 @@ false
 Polygon -7500403 true true 270 75 225 30 30 225 75 270
 Polygon -7500403 true true 30 75 75 30 270 225 225 270
 @#$#@#$#@
-NetLogo 6.0.4
+NetLogo 6.3.0
 @#$#@#$#@
 @#$#@#$#@
 @#$#@#$#@
