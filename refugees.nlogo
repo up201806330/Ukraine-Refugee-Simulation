@@ -11,7 +11,7 @@ globals [
   total_population
   ;total_GDP
   ;GDP_list
-  acceptance_ratio_list
+  ;acceptance_ratio_list
   max_population
   min_population
   gender_list
@@ -108,7 +108,6 @@ to setup-countries
     sprout-countries 1 [
       set shape "box"
       set size 2
-      set is_starting_country? false
       ;set policy_generosity 0
       ;set accepted_number 0
       ;set population_unreceptiveness false
@@ -119,14 +118,16 @@ to setup-countries
   let i 0 ; assign quality and plot pens to each hive
   repeat count countries [
     ask country i [
-      set population item i population_list
-      set color item i color_list
-      set max_refugees round (population / total_population * refugee_population * 0.5)
       set label max_refugees
+      set color item i color_list
+
+      set population item i population_list
+      set max_refugees round (population / total_population * refugee_population * 0.5)
       set population_unreceptiveness ((random 30) + 70)
       set first_update False
       set second_update False
       set accepted_number 1
+      set is_starting_country? false
     ]
     ;set-current-plot "on-site"
     ;create-temporary-plot-pen word "site" i
@@ -139,9 +140,10 @@ to setup-countries
   create-countries 1 [
     set shape "house"
     set size 2
-    set population refugee_population
-    set color ((3 + random-float 6) + (10 * random 14))
     set label population
+    set color ((3 + random-float 6) + (10 * random 14))
+
+    set population refugee_population
     set accepted_number 1
     set is_starting_country? true
   ]
@@ -316,33 +318,30 @@ end
 to choose_country
   ask refugees with [is_moving] [
     let desired_list []
-    ;let temp_open_list openness_list
-    let i 0
-    let temp_visited_countries visited_countries
     ask countries[
-      let temp_openness population_unreceptiveness
-      let temp_gen is_starting_country?
-      ;ask country i[
-      ; set temp_openness population_unreceptiveness
-      ; set temp_gen generator
-      ;]
-      ifelse not (member? country i temp_visited_countries) and not (temp_gen = 1)[
-        let value sqrt(distance_weight * (distance country i) * (distance country i) + openness_weight * (temp_openness) * (temp_openness))
-        ;show value
+      ifelse 
+      ; refugees can only move to a country other than their home
+      not is_starting_country? 
+      ; refugees won't reattempt to enter a visited country
+      and not (member? self [visited_countries] of myself)[
+
+        let openness_weighed openness_weight * population_unreceptiveness * population_unreceptiveness
+
+        let distance_to_refugee distance self
+        let distance_weighed distance_weight * distance_to_refugee * distance_to_refugee
+
+        let value sqrt(distance_weighed + openness_weighed)
         set desired_list lput value desired_list
-        ][
-          set desired_list lput 1000 desired_list
-        ]
-      set i i + 1
-      ;if i >= number_receiving_countries[
-      ;  continue
-      ;]
+      ][
+        ; baseline desireness
+        set desired_list lput 1000 desired_list
+      ]
     ]
-
-
-    let min_desired min desired_list
-    let index_desired position min_desired desired_list
-    set target_country country index_desired
+    
+    ; target country will be the one with lowest value in desired_list
+    let desired_index min desired_list
+    let desired_country position desired_index desired_list
+    set target_country country desired_country
 
     ; update family links
     if target_country != nobody [
@@ -360,10 +359,10 @@ end
 
 to update-label
   ask countries [
-    ifelse not is_starting_country? [
-      set label round max_refugees - accepted_number + 1
-    ][
+    ifelse is_starting_country? [
       set label round max_refugee_number - total_refugees_departed
+    ][
+      set label round max_refugees - accepted_number + 1
     ]
   ]
 end
