@@ -30,18 +30,20 @@ undirected-link-breed [family-links family-link]
 family-links-own [separated?]
 
 ;; link between refugee and country with number of family members that arrived there
-undirected-link-breed [family-country-links family-country-link]
-family-country-links-own [n_family]
+undirected-link-breed [family-at-links family-at-link]
+family-at-links-own [n_family]
 
 countries-own[
   first_update
   second_update
   policy_generosity
-  accepted_number
   population_unreceptiveness
   population
   max_refugees
   is_starting_country? ; the country who generates the refugees
+
+  accepted_number
+  reunions_number
 ]
 
 refugees-own[
@@ -283,20 +285,31 @@ to accept-refugee
           set accepted? true
           ;;set moving? false
           set accepted_number accepted_number + 1
+
+          ; save number of refugees that have reunited with family members
+          ; TODO plots
+          let link_to_target_country family-at-link (who) ([who] of myself)
+          if not (link_to_target_country = nobody) and [n_family] of link_to_target_country > 0[
+            set reunions_number reunions_number + [n_family] of link_to_target_country
+
+          ]
         ]
       ]
       if not accepted? [
-        set target_country nobody 
+        set target_country nobody
         stop
       ]
 
       set moving? false
       set arrived? true
       set accepted? false
+
       ; update family links with reunions where needed
       ask my-family-links [
+        let arrival_country_link [target_country] of myself
+
         ; Both family member and this refugee have same target countries
-        if [target_country] of other-end = [target_country] of myself[
+        if [target_country] of other-end = arrival_country_link[
           ifelse [moving?] of other-end[
             ; if one is moving, they are reuniting
             set color green
@@ -309,8 +322,27 @@ to accept-refugee
             ]
           ]
         ]
+
+        ; for each family member,
+        ; update/create family-at-links as needed
+        ask other-end [
+          ; if family-at-link exists between family member -- target country
+          ifelse in-family-at-link-neighbor? arrival_country_link
+          [
+            ; increment n_family
+            ask family-at-link (who) ([who] of arrival_country_link) [
+              set n_family n_family + 1
+            ]
+          ]
+          [
+            ; otherwise, create link and set n_family
+            create-family-at-link-with arrival_country_link [
+              set n_family 1
+              set color transparent ;these links are never visible
+            ]
+          ]
+        ]
       ]
-      ; update/create family-country-links as needed
     ]
   ]
 end
@@ -335,14 +367,18 @@ to choose_country
         let distance_to_refugee distance self
         let distance_weighed distance_weight * distance_to_refugee * distance_to_refugee
 
-        ;let family_count count family with [
-        ;  ; count family members that arrived to this country
-        ;  [arrived?] of other-end and
-        ;  this_country = [target_country] of other-end
-        ;]
-        ;let family_distance_weighed family_distance_weight * family_count * family_count
+        ; if a family-at-link exists between this country and refugee
+        let family_count 0
+        if in-family-at-link-neighbor? myself
+        [
+          ; family count is n_family of said link
+          set family_count [n_family] of (family-at-link (who) ([who] of myself))
+        ]
 
-        let value sqrt(distance_weighed + openness_weighed)
+        ;if family_count > 0 [show [who] of myself show family_count]
+        let family_distance_weighed family_distance_weight * family_count * family_count
+
+        let value sqrt(distance_weighed + openness_weighed + family_distance_weighed)
         set desired_list lput value desired_list
       ][
         ; baseline desireness
@@ -554,6 +590,23 @@ NIL
 NIL
 NIL
 0
+
+PLOT
+437
+502
+637
+690
+Family Reunions
+NIL
+NIL
+0.0
+10.0
+0.0
+10.0
+true
+true
+"" "ask countries [\n  create-temporary-plot-pen (word who)\n  set-plot-pen-color color\n  plotxy ticks reunions_number\n]"
+PENS
 
 @#$#@#$#@
 ## WHAT IS IT?
