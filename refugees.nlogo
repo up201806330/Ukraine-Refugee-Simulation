@@ -321,7 +321,7 @@ to choose_country
     let temp_visited_countries visited_countries
     ask countries[
       let temp_openness population_unreceptiveness
-      let temp_gen generator
+      let temp_gen is_starting_country?
       ;ask country i[
       ; set temp_openness population_unreceptiveness
       ; set temp_gen generator
