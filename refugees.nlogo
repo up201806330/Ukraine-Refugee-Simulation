@@ -15,10 +15,10 @@ globals [
   max_population
   min_population
   gender_list
+
   distance_weight
   openness_weight
-  distance_list
-  openness_list
+  family_distance_weight
 ]
 
 ;; agents
@@ -27,9 +27,11 @@ breed [countries country]
 
 ;; refugee agent links
 undirected-link-breed [family-links family-link]
-family-links-own [
-  separated?
-]
+family-links-own [separated?]
+
+;; link between refugee and country with number of family members that arrived there
+undirected-link-breed [family-country-links family-country-link]
+family-country-links-own [n_family]
 
 countries-own[
   first_update
@@ -46,13 +48,13 @@ refugees-own[
   age
   gender
   race
-  is_moving
+  moving?
   target_country
   visited_countries
   likeliness_of_staying
   family_size
   family_remaining
-  arrived
+  arrived?
   leaving_delay
 ]
 
@@ -81,6 +83,7 @@ to setup-refugees
   set gender_list ["Man" "Woman"]
   set distance_weight 10
   set openness_weight 5
+  set family_distance_weight 30
 end
 
 to setup-countries
@@ -89,8 +92,6 @@ to setup-countries
   set min_population 2500
   set color_list []
   set population_list []
-  set openness_list []
-  set distance_list []
   ;set GDP_list []
 
 
@@ -102,8 +103,6 @@ to setup-countries
     ; view with a minimum distance of 16 from the center
     set population_list lput (min_population + (random (max_population - min_population))) population_list
     set color_list lput ((3 + random-float 6) + (10 * random 14)) color_list
-    set openness_list lput 1 openness_list
-    set distance_list lput 1 distance_list
     ;set GDP_list lput (32 + random (277 - 32)) GDP_list
     sprout-countries 1 [
       set shape "box"
@@ -163,7 +162,7 @@ end
 to new-refugees
   create-refugees max_refugee_number [
     ; properties
-    set arrived false
+    set arrived? false
     set likeliness_of_staying random 100
     set age random max_age
     set gender one-of gender_list
@@ -185,12 +184,12 @@ to new-refugees
 
     ; first tick of updating properties
     ifelse likeliness_of_staying < agression_level[
-      set is_moving true
+      set moving? true
     ][
-      set is_moving false
+      set moving? false
     ]
     if( mandatory_enrollment = true) and (gender = "Man") and (age > 18) and (age < 65) [
-      set is_moving false
+      set moving? false
     ]
   ]
 
@@ -217,18 +216,18 @@ end
 to review_refugees
   ask refugees[
     ; if refugee hasn't left yet
-    if not arrived and not is_moving [
+    if not arrived? and not moving? [
       ; set likeliness_of_staying likeliness_of_staying - 0.1
       ifelse likeliness_of_staying < agression_level[
         ; mandatory enrollment prevents young males from leaving
         ifelse ( mandatory_enrollment = true) and (gender = "Man") and (age > 18) and (age < 65) [
-          set is_moving false
+          set moving? false
         ][
-          set is_moving true
+          set moving? true
           set total_refugees_departed total_refugees_departed + 1
         ]
       ][
-        set is_moving false
+        set moving? false
       ]
     ]
   ]
@@ -238,7 +237,7 @@ end
 
 ;; moves the refugees
 to move-refugees
-  ask refugees with [is_moving] [
+  ask refugees with [moving?] [
     ifelse leaving_delay > 0[
       set leaving_delay leaving_delay - 1
     ][
@@ -273,60 +272,75 @@ to review-policies
 end
 
 to accept-refugee
-  let accepted 0
-  ask refugees with [is_moving and not (target_country = nobody)] [
+  let accepted? false
+  ask refugees with [moving? and not (target_country = nobody)] [
 
     if distance target_country < 0.25[
       ;check accepted
       set visited_countries lput target_country visited_countries
       ask target_country[
         if accepted_number < max_refugees[
-          set accepted 1
-          ;;set is_moving false
+          set accepted? true
+          ;;set moving? false
           set accepted_number accepted_number + 1
         ]
       ]
-      if accepted = 1 [
-        set is_moving false
-        set arrived true
-        set accepted 0
-        ; update family links with reunions where needed
-        ask my-family-links [
-          ; Both family member and this refugee have same target countries
-          if [target_country] of other-end = [target_country] of myself[
-            ifelse [is_moving] of other-end[
-              ; if one is moving, they are reuniting
-              set color green
-              set thickness 0.5
-            ][
-              ; if they have both arrived, they are reunited
-              if [arrived] of other-end [
-                set separated? false
-                set color transparent
-              ]
+      if not accepted? [
+        set target_country nobody 
+        stop
+      ]
+
+      set moving? false
+      set arrived? true
+      set accepted? false
+      ; update family links with reunions where needed
+      ask my-family-links [
+        ; Both family member and this refugee have same target countries
+        if [target_country] of other-end = [target_country] of myself[
+          ifelse [moving?] of other-end[
+            ; if one is moving, they are reuniting
+            set color green
+            set thickness 0.5
+          ][
+            ; if they have both arrived, they are reunited
+            if [arrived?] of other-end [
+              set separated? false
+              set color transparent
             ]
           ]
         ]
       ]
-      set target_country nobody
+      ; update/create family-country-links as needed
     ]
   ]
 end
 
 to choose_country
-  ask refugees with [is_moving and target_country = nobody] [
+  ask refugees with [moving? and target_country = nobody] [
+    let refugees_visited_countries visited_countries
+    let family my-family-links
+
     let desired_list []
     ask countries[
-      ifelse 
+      let this_country self
+
+      ifelse
       ; refugees can only move to a country other than their home
-      not is_starting_country? 
+      not is_starting_country?
       ; refugees won't reattempt to enter a visited country
-      and not (member? self [visited_countries] of myself)[
+      and not (member? self refugees_visited_countries)[
 
         let openness_weighed openness_weight * population_unreceptiveness * population_unreceptiveness
 
         let distance_to_refugee distance self
         let distance_weighed distance_weight * distance_to_refugee * distance_to_refugee
+
+        ;let family_count count family with [
+        ;  ; count family members that arrived to this country
+        ;  [arrived?] of other-end and
+        ;  this_country = [target_country] of other-end
+        ;]
+        ;let family_distance_weighed family_distance_weight * family_count * family_count
 
         let value sqrt(distance_weighed + openness_weighed)
         set desired_list lput value desired_list
@@ -335,7 +349,7 @@ to choose_country
         set desired_list lput 1000 desired_list
       ]
     ]
-    
+
     ; target country will be the one with lowest value in desired_list
     let desired_index min desired_list
     let desired_country position desired_index desired_list
@@ -475,7 +489,7 @@ refugee_population
 refugee_population
 2500
 50000
-2500
+2500.0
 500
 1
 NIL
@@ -883,7 +897,7 @@ false
 Polygon -7500403 true true 270 75 225 30 30 225 75 270
 Polygon -7500403 true true 30 75 75 30 270 225 225 270
 @#$#@#$#@
-NetLogo 6.3.0
+NetLogo 6.0.4
 @#$#@#$#@
 @#$#@#$#@
 @#$#@#$#@
