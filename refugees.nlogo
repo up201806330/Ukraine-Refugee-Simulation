@@ -294,6 +294,7 @@ to accept-refugee
             ifelse [is_moving] of other-end[
               ; if one is moving, they are reuniting
               set color green
+              set thickness 0.5
             ][
               ; else, they are reunited
               if [arrived] of other-end [
@@ -349,7 +350,8 @@ to choose_country
         ; if both ends of the link have different target countries, they are separated
         if [target_country] of other-end != [target_country] of myself [
           set separated? true
-          ;set color red
+          set color red
+          set thickness 0.1
         ]
       ]
     ]
@@ -405,9 +407,9 @@ ticks
 
 BUTTON
 16
-51
-79
-84
+95
+212
+128
 NIL
 setup
 NIL
@@ -421,10 +423,10 @@ NIL
 1
 
 BUTTON
-84
-51
-147
-84
+48
+332
+220
+365
 NIL
 go
 T
@@ -438,19 +440,19 @@ NIL
 0
 
 SLIDER
-753
-86
-925
-119
+6
+291
+43
+441
 agression_level
 agression_level
 0
 100
-10.0
+19.0
 1
 1
 NIL
-HORIZONTAL
+VERTICAL
 
 SLIDER
 15
@@ -483,10 +485,10 @@ NIL
 HORIZONTAL
 
 PLOT
-26
-190
-226
-361
+229
+502
+429
+690
 Accepted Refugees
 Time
 Number Accepted Refugees 
@@ -518,21 +520,21 @@ PENS
 "default" 1.0 0 -16777216 true "" "plot total_refugees_departed"
 
 SWITCH
-752
-46
-925
-79
+48
+407
+222
+440
 mandatory_enrollment
 mandatory_enrollment
-1
+0
 1
 -1000
 
 SLIDER
-754
-124
-926
-157
+15
+50
+213
+83
 max_family_size
 max_family_size
 0
@@ -544,10 +546,10 @@ NIL
 HORIZONTAL
 
 BUTTON
-16
-88
-148
-121
+48
+369
+221
+402
 Toggle-show-links
 Toggle-show-links
 NIL
