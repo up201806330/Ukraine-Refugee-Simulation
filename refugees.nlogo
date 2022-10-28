@@ -39,7 +39,7 @@ countries-own[
   population_unreceptiveness
   population
   max_refugees
-  generator ; the country who generates the refugees
+  is_starting_country? ; the country who generates the refugees
 ]
 
 refugees-own[
@@ -108,6 +108,7 @@ to setup-countries
     sprout-countries 1 [
       set shape "box"
       set size 2
+      set is_starting_country? false
       ;set policy_generosity 0
       ;set accepted_number 0
       ;set population_unreceptiveness false
@@ -142,7 +143,7 @@ to setup-countries
     set color ((3 + random-float 6) + (10 * random 14))
     set label population
     set accepted_number 1
-    set generator 1
+    set is_starting_country? true
   ]
 end
 
@@ -196,17 +197,15 @@ to new-refugees
     let possible_family_members other refugees with [family_remaining > 0]
 
     ; if no more people left with family to link, return
-    if count possible_family_members > 0[
-      set family_remaining 0
+    if count possible_family_members <= 0 [stop]
 
-      let random_refugees (n-of family_size possible_family_members)
-
-      create-family-links-with random_refugees [
-        set color transparent
-      ]
-      ask random_refugees [
-        set family_remaining family_remaining - 1
-      ]
+    set family_remaining 0
+    let random_refugees (n-of family_size possible_family_members)
+    create-family-links-with random_refugees [
+      set color transparent
+    ]
+    ask random_refugees [
+      set family_remaining family_remaining - 1
     ]
   ]
 end
@@ -249,7 +248,7 @@ end
 ;; might have a bug, not sure if sets for every country or not
 to review-policies
   ask countries [
-    if generator = 0[
+    if not is_starting_country? [
       if (accepted_number / max_refugees) > 0.5 [
         if(first_update != True) [
           set max_refugees (max_refugees * (1 / (population_unreceptiveness / 100)))
@@ -287,6 +286,7 @@ to accept-refugee
         set is_moving false
         set arrived true
         set accepted 0
+
         ; update family links with reunions where needed
         ask my-family-links [
           ; Both family member and this refugee have same target countries
@@ -296,7 +296,7 @@ to accept-refugee
               set color green
               set thickness 0.5
             ][
-              ; else, they are reunited
+              ; if they have both arrived, they are reunited
               if [arrived] of other-end [
                 set separated? false
                 set color transparent
@@ -360,7 +360,7 @@ end
 
 to update-label
   ask countries [
-    ifelse generator = 0[
+    ifelse not is_starting_country? [
       set label round max_refugees - accepted_number + 1
     ][
       set label round max_refugee_number - total_refugees_departed
