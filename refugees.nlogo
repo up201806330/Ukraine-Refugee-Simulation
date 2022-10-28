@@ -191,7 +191,7 @@ to new-refugees
     ][
       set moving? false
     ]
-    if( mandatory_enrollment = true) and (gender = "Man") and (age > 18) and (age < 65) [
+    if( mandatory_military = true) and (gender = "Man") and (age > 18) and (age < 65) [
       set moving? false
     ]
   ]
@@ -223,7 +223,7 @@ to review_refugees
       ; set likeliness_of_staying likeliness_of_staying - 0.1
       ifelse likeliness_of_staying < agression_level[
         ; mandatory enrollment prevents young males from leaving
-        ifelse ( mandatory_enrollment = true) and (gender = "Man") and (age > 18) and (age < 65) [
+        ifelse ( mandatory_military = true) and (gender = "Man") and (age > 18) and (age < 65) [
           set moving? false
         ][
           set moving? true
@@ -505,7 +505,7 @@ agression_level
 agression_level
 0
 100
-10.0
+43.0
 1
 1
 NIL
@@ -542,10 +542,10 @@ NIL
 HORIZONTAL
 
 PLOT
-229
-502
-429
-690
+268
+456
+468
+644
 Accepted Refugees
 Time
 NIL
@@ -563,8 +563,8 @@ SWITCH
 657
 223
 690
-mandatory_enrollment
-mandatory_enrollment
+mandatory_military
+mandatory_military
 1
 1
 -1000
@@ -602,10 +602,10 @@ NIL
 0
 
 PLOT
-437
-502
-637
-690
+477
+456
+677
+644
 Family Reunions
 Time
 NIL
@@ -619,10 +619,10 @@ true
 PENS
 
 PLOT
+684
+456
+873
 645
-503
-834
-692
 Departed Refugees
 Time
 NIL
@@ -652,10 +652,10 @@ NIL
 VERTICAL
 
 SLIDER
-63
-129
-96
-282
+70
+130
+103
+283
 openness_weight
 openness_weight
 1
@@ -667,10 +667,10 @@ NIL
 VERTICAL
 
 SLIDER
-107
-129
-140
-282
+124
+130
+157
+283
 family_distance_weight
 family_distance_weight
 1
@@ -682,10 +682,10 @@ NIL
 VERTICAL
 
 PLOT
-230
-698
-430
-887
+269
+652
+469
+841
 Refused Refugees
 NIL
 NIL
@@ -697,6 +697,21 @@ true
 true
 "" "ask countries with [who != 0][\n  create-temporary-plot-pen (word who)\n  set-plot-pen-color color\n  plotxy ticks refused_number\n]"
 PENS
+
+SLIDER
+177
+130
+210
+283
+gdp_weight
+gdp_weight
+1
+50
+5.0
+1
+1
+NIL
+VERTICAL
 
 @#$#@#$#@
 ## WHAT IS IT?
