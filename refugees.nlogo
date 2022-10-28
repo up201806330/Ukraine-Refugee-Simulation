@@ -1,6 +1,7 @@
 globals [
   ; interface
   show_family_links?
+  transparent
 
   max_age
   max_refugee_number
@@ -60,14 +61,18 @@ to setup
 
   setup-refugees
   setup-countries
+  new-refugees
+
   setup-interface
 
   reset-ticks
 end
 
 to setup-interface
-  set show_family_links? false
-  Toggle-links
+  set show_family_links? true
+  Toggle-show-links
+
+  set transparent [0 0 0 0]
 end
 
 to setup-refugees
@@ -77,8 +82,6 @@ to setup-refugees
   set gender_list ["Man" "Woman"]
   set distance_weight 10
   set openness_weight 5
-
-  new-refugees
 end
 
 to setup-countries
@@ -198,7 +201,9 @@ to new-refugees
 
       let random_refugees (n-of family_size possible_family_members)
 
-      create-family-links-with random_refugees
+      create-family-links-with random_refugees [
+        set color transparent
+      ]
       ask random_refugees [
         set family_remaining family_remaining - 1
       ]
@@ -209,7 +214,7 @@ end
 to review_refugees
   ask refugees[
     ; if refugee hasn't left yet
-    ifelse not arrived and not is_moving [
+    if not arrived and not is_moving [
       ; set likeliness_of_staying likeliness_of_staying - 0.1
       ifelse likeliness_of_staying < agression_level[
         ; mandatory enrollment prevents young males from leaving
@@ -222,24 +227,10 @@ to review_refugees
       ][
         set is_moving false
       ]
-    ][
-
-      ; if refugee is moving, set separated property of family links
-      ;if is_moving [
-      ;  ask my-family-links [
-      ;    if is_moving [ ; if 2 members are moving, they won't be reunited in travel
-      ;      ; if both ends of the link have different target countries, they are separated
-      ;      if [target_country] of other-end != [target_country] of myself [
-      ;        set separated? true
-      ;      ]
-      ;
-      ;    ]
-      ;  ]
-      ;]
     ]
   ]
 
-  
+
 end
 
 ;; moves the refugees
@@ -277,71 +268,92 @@ end
 
 to accept-refugee
   let accepted 0
-  ask refugees [
-    if is_moving[
-      if target_country = nobody[
-        stop
+  ask refugees with [is_moving] [
+    if target_country = nobody[
+      stop
+    ]
+
+    ifelse distance target_country < 0.25[
+      ;check accepted
+      set visited_countries lput target_country visited_countries
+      ask target_country[
+        if accepted_number < max_refugees[
+          set accepted 1
+          ;;set is_moving false
+          set accepted_number accepted_number + 1
+        ]
       ]
-      ifelse distance target_country < 0.25[
-        ;check accepted
-        set visited_countries lput target_country visited_countries
-        ask target_country[
-          if accepted_number < max_refugees[
-            set accepted 1
-            ;;set is_moving false
-            set accepted_number accepted_number + 1
+      if accepted = 1 [
+        set is_moving false
+        set arrived true
+        set accepted 0
+        ; update family links with reunions where needed
+        ask my-family-links [
+          ; Both family member and this refugee have same target countries
+          if [target_country] of other-end = [target_country] of myself[
+            ifelse [is_moving] of other-end[
+              ; if one is moving, they are reuniting
+              set color green
+            ][
+              ; else, they are reunited
+              if [arrived] of other-end [
+                set separated? false
+                set color transparent
+              ]
+            ]
           ]
         ]
-        if accepted = 1 [
-          set is_moving false
-          set arrived true
-          set accepted 0
-          ; TODO remove separated connections where needed
-        ]
-        set target_country nobody
-      ][
-        face target_country
-        forward 0.1
       ]
+      set target_country nobody
+    ][
+      face target_country
+      forward 0.1
     ]
   ]
 end
 
 to choose_country
-  ask refugees [
-   if is_moving[
+  ask refugees with [is_moving] [
+    let desired_list []
+    ;let temp_open_list openness_list
+    let i 0
+    let temp_visited_countries visited_countries
+    ask countries[
+      let temp_openness population_unreceptiveness
+      let temp_gen generator
+      ;ask country i[
+      ; set temp_openness population_unreceptiveness
+      ; set temp_gen generator
+      ;]
+      ifelse not (member? country i temp_visited_countries) and not (temp_gen = 1)[
+        let value sqrt(distance_weight * (distance country i) * (distance country i) + openness_weight * (temp_openness) * (temp_openness))
+        ;show value
+        set desired_list lput value desired_list
+        ][
+          set desired_list lput 1000 desired_list
+        ]
+      set i i + 1
+      ;if i >= number_receiving_countries[
+      ;  continue
+      ;]
+    ]
 
-      let desired_list []
-      ;let temp_open_list openness_list
-      let i 0
-      let temp_visited_countries visited_countries
-      ask countries[
-        let temp_openness population_unreceptiveness
-        let temp_gen generator
-        ;ask country i[
-        ; set temp_openness population_unreceptiveness
-        ; set temp_gen generator
-        ;]
-        ifelse not (member? country i temp_visited_countries) and not (temp_gen = 1)[
-          let value sqrt(distance_weight * (distance country i) * (distance country i) + openness_weight * (temp_openness) * (temp_openness))
-          ;show value
-          set desired_list lput value desired_list
-         ][
-            set desired_list lput 1000 desired_list
-         ]
-        set i i + 1
-        ;if i >= number_receiving_countries[
-        ;  continue
-        ;]
+
+    let min_desired min desired_list
+    let index_desired position min_desired desired_list
+    set target_country country index_desired
+
+    ; update family links
+    if target_country != nobody [
+      ask my-family-links [
+        ; if both ends of the link have different target countries, they are separated
+        if [target_country] of other-end != [target_country] of myself [
+          set separated? true
+          ;set color red
+        ]
       ]
-
-
-      let min_desired min desired_list
-      let index_desired position min_desired desired_list
-      set target_country country index_desired
     ]
   ]
-
 end
 
 to update-label
@@ -359,7 +371,7 @@ to toggle-show-family-links
     set hidden? not show_family_links?
   ]
 end
-to Toggle-links
+to Toggle-show-links
   toggle-show-family-links
   set show_family_links? (not show_family_links?)
 end
@@ -409,10 +421,10 @@ NIL
 1
 
 BUTTON
-113
-52
-176
-85
+84
+51
+147
+84
 NIL
 go
 T
@@ -532,12 +544,12 @@ NIL
 HORIZONTAL
 
 BUTTON
-15
-92
-132
-125
-Toggle-links
-Toggle-links
+16
+88
+148
+121
+Toggle-show-links
+Toggle-show-links
 NIL
 1
 T
