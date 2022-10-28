@@ -1,5 +1,4 @@
 globals [
-  ; interface
   show_family_links?
   transparent
   max_leaving_delay
@@ -9,13 +8,9 @@ globals [
   color_list
   population_list
   total_population
-  ;total_GDP
-  ;GDP_list
-  ;acceptance_ratio_list
   max_population
   min_population
   gender_list
-
   first_refugee_wave
 ]
 
@@ -34,11 +29,11 @@ family-at-links-own [n_family]
 countries-own[
   first_update
   second_update
-  policy_generosity
+  gdp ; divided by 1k
   population_unreceptiveness
   population
   max_refugees
-  is_starting_country? ; the country who generates the refugees
+  is_starting_country?
 
   accepted_number
   refused_number
@@ -85,7 +80,7 @@ to setup-refugees
   set max_age 100
   set max_refugee_number refugee_population
   set total_refugees_departed 0
-  set gender_list ["Man" "Woman"]
+  set gender_list ["Male" "Female"]
 end
 
 to setup-countries
@@ -94,29 +89,23 @@ to setup-countries
   set min_population 2500
   set color_list []
   set population_list []
-  ;set GDP_list []
-
 
   ask n-of number_receiving_countries patches with [
     distancexy 0 0 > 4 and abs pxcor < (max-pxcor - 1) and
     abs pycor < (max-pycor - 1)
   ] [
-    ; randomly placing hives around the center in the
-    ; view with a minimum distance of 16 from the center
     set population_list lput (min_population + (random (max_population - min_population))) population_list
     set color_list lput ((3 + random-float 6) + (10 * random 14)) color_list
-    ;set GDP_list lput (32 + random (277 - 32)) GDP_list
     sprout-countries 1 [
       set shape "box"
       set size 2
-      ;set policy_generosity 0
       ;set accepted_number 0
       ;set population_unreceptiveness false
     ]
   ]
   set total_population sum population_list
 
-  let i 0 ; assign quality and plot pens to each hive
+  let i 0
   repeat count countries [
     ask country i [
       set label max_refugees
@@ -124,6 +113,7 @@ to setup-countries
 
       set population item i population_list
       set max_refugees round (population / total_population * refugee_population * 0.5)
+      set gdp (random 3000 - 500)
       set population_unreceptiveness ((random 30) + 70)
       set first_update False
       set second_update False
@@ -131,12 +121,6 @@ to setup-countries
       set refused_number 0
       set is_starting_country? false
     ]
-    ;set-current-plot "on-site"
-    ;create-temporary-plot-pen word "site" i
-    ;set-plot-pen-color item i color-list
-    ;set-current-plot "committed"
-    ;create-temporary-plot-pen word "target" i
-    ;set-plot-pen-color item i color-list
     set i i + 1
   ]
   create-countries 1 [
@@ -164,6 +148,7 @@ end
 to new-refugees
   create-refugees max_refugee_number [
     ; properties
+    set moving? false
     set arrived? false
     set departed? false
     set likeliness_of_staying random 100
@@ -176,23 +161,13 @@ to new-refugees
     set leaving_delay random max_leaving_delay
     ; visuals
     set shape "person"
-    ifelse gender = "Man"[
+    ifelse gender = "Male"[
       set color 105
     ][
       set color 135
     ]
     if age < 18[
       set size 0.7
-    ]
-
-    ; first tick of updating properties
-    ifelse likeliness_of_staying < agression_level[
-      set moving? true
-    ][
-      set moving? false
-    ]
-    if( mandatory_military = true) and (gender = "Man") and (age > 18) and (age < 65) [
-      set moving? false
     ]
   ]
 
@@ -223,7 +198,7 @@ to review_refugees
       ; set likeliness_of_staying likeliness_of_staying - 0.1
       ifelse likeliness_of_staying < agression_level[
         ; mandatory enrollment prevents young males from leaving
-        ifelse ( mandatory_military = true) and (gender = "Man") and (age > 18) and (age < 65) [
+        ifelse ( mandatory_military = true) and (gender = "Male") and (age > 18) and (age < 65) [
           set moving? false
         ][
           set moving? true
@@ -273,6 +248,66 @@ to review-policies
         if(second_update != True) [
           set max_refugees (max_refugees * (1 / (population_unreceptiveness / 100)))
           set second_update True
+        ]
+      ]
+    ]
+  ]
+end
+
+to choose_country
+  ask refugees with [moving? and target_country = nobody] [
+    let refugees_visited_countries visited_countries
+    let family my-family-links
+
+    let desired_list []
+    ask countries[
+      let this_country self
+
+      ifelse
+      ; refugees can only move to a country other than their home
+      not is_starting_country?
+      ; refugees won't reattempt to enter a visited country
+      and not (member? self refugees_visited_countries)[
+
+        let openness_weighed openness_weight * population_unreceptiveness * population_unreceptiveness
+
+        let distance_to_refugee distance self
+        let distance_weighed distance_weight * distance_to_refugee * distance_to_refugee
+
+        ; if a family-at-link exists between this country and refugee
+        let family_count 0
+        if in-family-at-link-neighbor? myself
+        [
+          ; family count is n_family of said link
+          set family_count [n_family] of (family-at-link (who) ([who] of myself))
+        ]
+
+        ;if family_count > 0 [show [who] of myself show family_count]
+        let family_distance_weighed family_distance_weight * family_count * family_count
+
+        let gdp_weighed gdp_weight * gdp * gdp
+
+        let value sqrt(distance_weighed + openness_weighed + family_distance_weighed + gdp_weighed)
+        set desired_list lput value desired_list
+      ][
+        ; baseline desireness
+        set desired_list lput 1000 desired_list
+      ]
+    ]
+
+    ; target country will be the one with lowest value in desired_list
+    let desired_index min desired_list
+    let desired_country position desired_index desired_list
+    set target_country country desired_country
+
+    ; update family links
+    if target_country != nobody [
+      ask my-family-links [
+        ; if both ends of the link have different target countries, they are separated
+        if [target_country] of other-end != [target_country] of myself [
+          set separated? true
+          set color red
+          set thickness 0.1
         ]
       ]
     ]
@@ -347,64 +382,6 @@ to accept-refugee
               set color transparent ;these links are never visible
             ]
           ]
-        ]
-      ]
-    ]
-  ]
-end
-
-to choose_country
-  ask refugees with [moving? and target_country = nobody] [
-    let refugees_visited_countries visited_countries
-    let family my-family-links
-
-    let desired_list []
-    ask countries[
-      let this_country self
-
-      ifelse
-      ; refugees can only move to a country other than their home
-      not is_starting_country?
-      ; refugees won't reattempt to enter a visited country
-      and not (member? self refugees_visited_countries)[
-
-        let openness_weighed openness_weight * population_unreceptiveness * population_unreceptiveness
-
-        let distance_to_refugee distance self
-        let distance_weighed distance_weight * distance_to_refugee * distance_to_refugee
-
-        ; if a family-at-link exists between this country and refugee
-        let family_count 0
-        if in-family-at-link-neighbor? myself
-        [
-          ; family count is n_family of said link
-          set family_count [n_family] of (family-at-link (who) ([who] of myself))
-        ]
-
-        ;if family_count > 0 [show [who] of myself show family_count]
-        let family_distance_weighed family_distance_weight * family_count * family_count
-
-        let value sqrt(distance_weighed + openness_weighed + family_distance_weighed)
-        set desired_list lput value desired_list
-      ][
-        ; baseline desireness
-        set desired_list lput 1000 desired_list
-      ]
-    ]
-
-    ; target country will be the one with lowest value in desired_list
-    let desired_index min desired_list
-    let desired_country position desired_index desired_list
-    set target_country country desired_country
-
-    ; update family links
-    if target_country != nobody [
-      ask my-family-links [
-        ; if both ends of the link have different target countries, they are separated
-        if [target_country] of other-end != [target_country] of myself [
-          set separated? true
-          set color red
-          set thickness 0.1
         ]
       ]
     ]
@@ -505,7 +482,7 @@ agression_level
 agression_level
 0
 100
-43.0
+10.0
 1
 1
 NIL
