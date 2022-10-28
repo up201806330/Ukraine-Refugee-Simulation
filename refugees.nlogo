@@ -503,7 +503,7 @@ agression_level
 agression_level
 0
 100
-53.0
+10.0
 1
 1
 NIL
@@ -546,7 +546,7 @@ PLOT
 690
 Accepted Refugees
 Time
-Number Accepted Refugees 
+NIL
 0.0
 10.0
 0.0
@@ -563,7 +563,7 @@ SWITCH
 440
 mandatory_enrollment
 mandatory_enrollment
-1
+0
 1
 -1000
 
@@ -605,7 +605,7 @@ PLOT
 637
 690
 Family Reunions
-NIL
+Time
 NIL
 0.0
 10.0
@@ -623,7 +623,7 @@ PLOT
 690
 Number of Departed Refugees
 Time
-Number of Refugees
+NIL
 0.0
 10.0
 0.0
@@ -632,7 +632,7 @@ true
 false
 "" ""
 PENS
-"default" 1.0 0 -16777216 true "" "plot total_refugees_departed"
+"default" 1.0 0 -5825686 true "" "plot total_refugees_departed"
 
 @#$#@#$#@
 ## WHAT IS IT?
