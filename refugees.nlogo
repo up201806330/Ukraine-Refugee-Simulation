@@ -145,7 +145,7 @@ to setup-countries
 
     set population refugee_population
     set accepted_number 1
-    set is_starting_country? 1
+    set is_starting_country? true
   ]
 end
 
@@ -200,17 +200,16 @@ to new-refugees
     let possible_family_members other refugees with [family_remaining > 0]
 
     ; if no more people left with family to link, return
-    if count possible_family_members > 0[
-      set family_remaining 0
+    if count possible_family_members <= 0 [stop]
 
-      let random_refugees (n-of family_size possible_family_members)
+    set family_remaining 0
+    let random_refugees (n-of family_size possible_family_members)
 
-      create-family-links-with random_refugees [
-        set color transparent
-      ]
-      ask random_refugees [
-        set family_remaining family_remaining - 1
-      ]
+    create-family-links-with random_refugees [
+      set color transparent
+    ]
+    ask random_refugees [
+      set family_remaining family_remaining - 1
     ]
   ]
 end
@@ -446,7 +445,7 @@ agression_level
 agression_level
 0
 100
-50.0
+10.0
 1
 1
 NIL
@@ -461,7 +460,7 @@ number_receiving_countries
 number_receiving_countries
 0
 100
-8.0
+7.0
 1
 1
 NIL
@@ -476,7 +475,7 @@ refugee_population
 refugee_population
 2500
 50000
-10000.0
+2500
 500
 1
 NIL
