@@ -287,7 +287,6 @@ to accept-refugee
           set accepted_number accepted_number + 1
 
           ; save number of refugees that have reunited with family members
-          ; TODO plots
           let link_to_target_country family-at-link (who) ([who] of myself)
           if not (link_to_target_country = nobody) and [n_family] of link_to_target_country > 0[
             set reunions_number reunions_number + [n_family] of link_to_target_country
