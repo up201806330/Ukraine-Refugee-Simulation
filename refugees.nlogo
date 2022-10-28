@@ -41,6 +41,7 @@ countries-own[
   is_starting_country? ; the country who generates the refugees
 
   accepted_number
+  refused_number
   reunions_number
 ]
 
@@ -48,12 +49,14 @@ refugees-own[
   age
   gender
   race
-  moving?
   target_country
   visited_countries
   likeliness_of_staying
   family_size
   family_remaining
+
+  moving?
+  departed?
   arrived?
   leaving_delay
 ]
@@ -124,7 +127,8 @@ to setup-countries
       set population_unreceptiveness ((random 30) + 70)
       set first_update False
       set second_update False
-      set accepted_number 1
+      set accepted_number 0
+      set refused_number 0
       set is_starting_country? false
     ]
     ;set-current-plot "on-site"
@@ -142,7 +146,6 @@ to setup-countries
     set color ((3 + random-float 6) + (10 * random 14))
 
     set population refugee_population
-    set accepted_number 1
     set is_starting_country? true
   ]
 end
@@ -162,6 +165,7 @@ to new-refugees
   create-refugees max_refugee_number [
     ; properties
     set arrived? false
+    set departed? false
     set likeliness_of_staying random 100
     set age random max_age
     set gender one-of gender_list
@@ -184,7 +188,6 @@ to new-refugees
     ; first tick of updating properties
     ifelse likeliness_of_staying < agression_level[
       set moving? true
-      set total_refugees_departed total_refugees_departed + 1
     ][
       set moving? false
     ]
@@ -224,7 +227,6 @@ to review_refugees
           set moving? false
         ][
           set moving? true
-          set total_refugees_departed total_refugees_departed + 1
         ]
       ][
         set moving? false
@@ -244,8 +246,14 @@ to move-refugees
       ifelse target_country = nobody[
         choose_country
       ][
+        let move_distance random-float 1
         face target_country
-        forward random-float 1
+        forward move_distance
+
+        if not departed? and move_distance > 0[
+          set departed? true
+          set total_refugees_departed total_refugees_departed + 1
+        ]
       ]
     ]
   ]
@@ -279,7 +287,7 @@ to accept-refugee
       ;check accepted
       set visited_countries lput target_country visited_countries
       ask target_country[
-        if accepted_number < max_refugees[
+        ifelse accepted_number < max_refugees[
           set accepted? true
           ;;set moving? false
           set accepted_number accepted_number + 1
@@ -291,6 +299,7 @@ to accept-refugee
 
           ]
         ]
+        [set refused_number refused_number + 1]
       ]
       if not accepted? [
         set target_country nobody
@@ -546,7 +555,7 @@ NIL
 10.0
 true
 true
-"" "ask countries [\n  create-temporary-plot-pen (word who)\n  set-plot-pen-color color\n  plotxy ticks accepted_number\n]"
+"" "ask countries with [who != 0][\n  create-temporary-plot-pen (word who)\n  set-plot-pen-color color\n  plotxy ticks accepted_number\n]"
 PENS
 
 SWITCH
@@ -556,7 +565,7 @@ SWITCH
 690
 mandatory_enrollment
 mandatory_enrollment
-0
+1
 1
 -1000
 
@@ -606,15 +615,15 @@ NIL
 10.0
 true
 true
-"" "ask countries [\n  create-temporary-plot-pen (word who)\n  set-plot-pen-color color\n  plotxy ticks reunions_number\n]"
+"" "ask countries with [who != 0][\n  create-temporary-plot-pen (word who)\n  set-plot-pen-color color\n  plotxy ticks reunions_number\n]"
 PENS
 
 PLOT
-649
-500
-837
-690
-Number of Departed Refugees
+645
+503
+834
+692
+Departed Refugees
 Time
 NIL
 0.0
@@ -630,7 +639,7 @@ PENS
 SLIDER
 17
 129
-55
+50
 281
 distance_weight
 distance_weight
@@ -645,7 +654,7 @@ VERTICAL
 SLIDER
 63
 129
-101
+96
 282
 openness_weight
 openness_weight
@@ -660,7 +669,7 @@ VERTICAL
 SLIDER
 107
 129
-145
+140
 282
 family_distance_weight
 family_distance_weight
@@ -671,6 +680,23 @@ family_distance_weight
 1
 NIL
 VERTICAL
+
+PLOT
+230
+698
+430
+887
+Refused Refugees
+NIL
+NIL
+0.0
+10.0
+0.0
+10.0
+true
+true
+"" "ask countries with [who != 0][\n  create-temporary-plot-pen (word who)\n  set-plot-pen-color color\n  plotxy ticks refused_number\n]"
+PENS
 
 @#$#@#$#@
 ## WHAT IS IT?
