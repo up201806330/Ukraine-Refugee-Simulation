@@ -690,6 +690,24 @@ gdp_weight
 NIL
 VERTICAL
 
+PLOT
+477
+653
+675
+841
+Asylum Requests Denied
+Nr. Tries
+NIL
+0.0
+10.0
+0.0
+10.0
+true
+false
+"set-plot-x-range 0 4\nset-plot-y-range 0 count refugees with [moving? or arrived?] + 1\nset-histogram-num-bars 4" ""
+PENS
+"default" 1.0 1 -2139308 true "" "histogram [length visited_countries] of refugees"
+
 @#$#@#$#@
 ## WHAT IS IT?
 
