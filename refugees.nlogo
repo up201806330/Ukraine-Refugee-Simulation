@@ -2,7 +2,7 @@ globals [
   ; interface
   show_family_links?
   transparent
-
+  max_leaving_delay
   max_age
   max_refugee_number
   total_refugees_departed
@@ -39,7 +39,7 @@ countries-own[
   population_unreceptiveness
   population
   max_refugees
-  is_starting_country? ; the country who generates the refugees
+  generator ; the country who generates the refugees
 ]
 
 refugees-own[
@@ -53,16 +53,15 @@ refugees-own[
   family_size
   family_remaining
   arrived
+  leaving_delay
 ]
 
 
 to setup
   clear-all
-
   setup-refugees
   setup-countries
   new-refugees
-
   setup-interface
 
   reset-ticks
@@ -85,6 +84,7 @@ to setup-refugees
 end
 
 to setup-countries
+  set max_leaving_delay 300
   set max_population 50000
   set min_population 2500
   set color_list []
@@ -108,7 +108,6 @@ to setup-countries
     sprout-countries 1 [
       set shape "box"
       set size 2
-      set is_starting_country? false
       ;set policy_generosity 0
       ;set accepted_number 0
       ;set population_unreceptiveness false
@@ -143,12 +142,13 @@ to setup-countries
     set color ((3 + random-float 6) + (10 * random 14))
     set label population
     set accepted_number 1
-    set is_starting_country? true
+    set generator 1
   ]
 end
 
 ;; called every tick
 to go
+  accept-refugee
   move-refugees
   review_refugees
   review-policies
@@ -168,7 +168,7 @@ to new-refugees
     set visited_countries []
     set family_size max list ((random max_family_size * 2) - max_family_size) 0
     set family_remaining family_size
-
+    set leaving_delay random max_leaving_delay
     ; visuals
     set shape "person"
     ifelse gender = "Man"[
@@ -197,15 +197,17 @@ to new-refugees
     let possible_family_members other refugees with [family_remaining > 0]
 
     ; if no more people left with family to link, return
-    if count possible_family_members <= 0 [stop]
+    if count possible_family_members > 0[
+      set family_remaining 0
 
-    set family_remaining 0
-    let random_refugees (n-of family_size possible_family_members)
-    create-family-links-with random_refugees [
-      set color transparent
-    ]
-    ask random_refugees [
-      set family_remaining family_remaining - 1
+      let random_refugees (n-of family_size possible_family_members)
+
+      create-family-links-with random_refugees [
+        set color transparent
+      ]
+      ask random_refugees [
+        set family_remaining family_remaining - 1
+      ]
     ]
   ]
 end
@@ -234,12 +236,16 @@ end
 
 ;; moves the refugees
 to move-refugees
-  ask refugees [
-    if is_moving[
-      if target_country = nobody[
+  ask refugees with [is_moving] [
+    ifelse leaving_delay > 0[
+      set leaving_delay leaving_delay - 1
+    ][
+      ifelse target_country = nobody[
         choose_country
+      ][
+        face target_country
+        forward random-float 1
       ]
-      accept-refugee
     ]
   ]
 end
@@ -248,7 +254,7 @@ end
 ;; might have a bug, not sure if sets for every country or not
 to review-policies
   ask countries [
-    if not is_starting_country? [
+    if generator = 0[
       if (accepted_number / max_refugees) > 0.5 [
         if(first_update != True) [
           set max_refugees (max_refugees * (1 / (population_unreceptiveness / 100)))
@@ -267,12 +273,9 @@ end
 
 to accept-refugee
   let accepted 0
-  ask refugees with [is_moving] [
-    if target_country = nobody[
-      stop
-    ]
+  ask refugees with [is_moving and not (target_country = nobody)] [
 
-    ifelse distance target_country < 0.25[
+    if distance target_country < 0.25[
       ;check accepted
       set visited_countries lput target_country visited_countries
       ask target_country[
@@ -286,7 +289,6 @@ to accept-refugee
         set is_moving false
         set arrived true
         set accepted 0
-
         ; update family links with reunions where needed
         ask my-family-links [
           ; Both family member and this refugee have same target countries
@@ -296,7 +298,7 @@ to accept-refugee
               set color green
               set thickness 0.5
             ][
-              ; if they have both arrived, they are reunited
+              ; else, they are reunited
               if [arrived] of other-end [
                 set separated? false
                 set color transparent
@@ -306,22 +308,19 @@ to accept-refugee
         ]
       ]
       set target_country nobody
-    ][
-      face target_country
-      forward 0.1
     ]
   ]
 end
 
 to choose_country
-  ask refugees with [is_moving] [
+  ask refugees with [is_moving and target_country = nobody] [
     let desired_list []
     ;let temp_open_list openness_list
     let i 0
     let temp_visited_countries visited_countries
     ask countries[
       let temp_openness population_unreceptiveness
-      let temp_gen is_starting_country?
+      let temp_gen generator
       ;ask country i[
       ; set temp_openness population_unreceptiveness
       ; set temp_gen generator
@@ -360,7 +359,7 @@ end
 
 to update-label
   ask countries [
-    ifelse not is_starting_country? [
+    ifelse generator = 0[
       set label round max_refugees - accepted_number + 1
     ][
       set label round max_refugee_number - total_refugees_departed
@@ -448,7 +447,7 @@ agression_level
 agression_level
 0
 100
-19.0
+50.0
 1
 1
 NIL
@@ -463,7 +462,7 @@ number_receiving_countries
 number_receiving_countries
 0
 100
-7.0
+8.0
 1
 1
 NIL
@@ -478,7 +477,7 @@ refugee_population
 refugee_population
 2500
 50000
-2500.0
+10000.0
 500
 1
 NIL
@@ -886,7 +885,7 @@ false
 Polygon -7500403 true true 270 75 225 30 30 225 75 270
 Polygon -7500403 true true 30 75 75 30 270 225 225 270
 @#$#@#$#@
-NetLogo 6.0.4
+NetLogo 6.3.0
 @#$#@#$#@
 @#$#@#$#@
 @#$#@#$#@
