@@ -7,7 +7,6 @@ globals [
   total_refugees_departed
   color_list
   population_list
-  total_population
   max_population
   min_population
   gender_list
@@ -85,8 +84,8 @@ end
 
 to setup-countries
   set max_leaving_delay 300
-  set max_population 50000
-  set min_population 2500
+  set max_population 3000
+  set min_population 200
   set color_list []
   set population_list []
 
@@ -103,7 +102,7 @@ to setup-countries
       ;set population_unreceptiveness false
     ]
   ]
-  set total_population sum population_list
+  let total_population sum population_list
 
   let i 0
   repeat count countries [
@@ -112,8 +111,8 @@ to setup-countries
       set color item i color_list
 
       set population item i population_list
-      set max_refugees round (population / total_population * refugee_population * 0.5)
-      set gdp (random 3000 - 500)
+      set max_refugees round (population / total_population * refugee_population * 0.9)
+      set gdp (random 3000 - 500) + 500
       set population_unreceptiveness ((random 30) + 70)
       set first_update False
       set second_update False
@@ -510,9 +509,9 @@ SLIDER
 121
 refugee_population
 refugee_population
-2500
-50000
-2500.0
+200
+3000
+1500.0
 500
 1
 NIL
@@ -532,7 +531,7 @@ NIL
 10.0
 true
 true
-"" "ask countries with [who != 0][\n  create-temporary-plot-pen (word who)\n  set-plot-pen-color color\n  plotxy ticks accepted_number\n]"
+"" "ask countries with [not is_starting_country?][\n  create-temporary-plot-pen (word who)\n  set-plot-pen-color color\n  plotxy ticks accepted_number\n]"
 PENS
 
 SWITCH
@@ -592,7 +591,7 @@ NIL
 10.0
 true
 true
-"" "ask countries with [who != 0][\n  create-temporary-plot-pen (word who)\n  set-plot-pen-color color\n  plotxy ticks reunions_number\n]"
+"" "ask countries with [not is_starting_country?][\n  create-temporary-plot-pen (word who)\n  set-plot-pen-color color\n  plotxy ticks reunions_number\n]"
 PENS
 
 PLOT
@@ -672,7 +671,7 @@ NIL
 10.0
 true
 true
-"" "ask countries with [who != 0][\n  create-temporary-plot-pen (word who)\n  set-plot-pen-color color\n  plotxy ticks refused_number\n]"
+"" "ask countries with [not is_starting_country?][\n  create-temporary-plot-pen (word who)\n  set-plot-pen-color color\n  plotxy ticks refused_number\n]"
 PENS
 
 SLIDER
@@ -704,9 +703,42 @@ NIL
 10.0
 true
 false
-"set-plot-x-range 0 4\nset-plot-y-range 0 count refugees with [moving? or arrived?] + 1\nset-histogram-num-bars 4" ""
+"set-plot-x-range 0 4\nset-plot-y-range 0 count refugees with [arrived?] + 1\nset-histogram-num-bars 4" ""
 PENS
 "default" 1.0 1 -2139308 true "" "histogram [length visited_countries] of refugees"
+
+MONITOR
+708
+10
+950
+55
+GDP
+map [\n  x -> [gdp] of x\n] sort-on [who] countries with [not is_starting_country?]
+17
+1
+11
+
+MONITOR
+709
+63
+952
+108
+Population Unreceptiveness
+map [\n  x -> [population_unreceptiveness] of x\n] sort-on [who] countries with [not is_starting_country?]
+17
+1
+11
+
+MONITOR
+709
+115
+953
+160
+Places Left
+map [\n  x -> [round (max_refugees - accepted_number) + 1] of x\n] sort-on [who] countries with [not is_starting_country?]
+17
+1
+11
 
 @#$#@#$#@
 ## WHAT IS IT?
@@ -1050,7 +1082,7 @@ false
 Polygon -7500403 true true 270 75 225 30 30 225 75 270
 Polygon -7500403 true true 30 75 75 30 270 225 225 270
 @#$#@#$#@
-NetLogo 6.3.0
+NetLogo 6.0.4
 @#$#@#$#@
 @#$#@#$#@
 @#$#@#$#@
