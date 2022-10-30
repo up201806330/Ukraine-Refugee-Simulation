@@ -112,7 +112,7 @@ to setup-countries
 
       set population item i population_list
       set max_refugees round (population / total_population * refugee_population * 0.9)
-      set gdp (random 3000 - 500) + 500
+      set gdp 500 + (random (3000 - 500))
       set population_unreceptiveness ((random 30) + 70)
       set first_update False
       set second_update False
@@ -268,8 +268,10 @@ to choose_country
       ; refugees won't reattempt to enter a visited country
       and not (member? self refugees_visited_countries)[
 
-        let openness_weighed openness_weight * population_unreceptiveness * population_unreceptiveness
+        ; max population_unreceptiveness - 70 = 30
+        let openness_weighed openness_weight * (population_unreceptiveness - 70) * (population_unreceptiveness - 70)
 
+        ; max distance = 20
         let distance_to_refugee distance self
         let distance_weighed distance_weight * distance_to_refugee * distance_to_refugee
 
@@ -282,9 +284,11 @@ to choose_country
         ]
 
         ;if family_count > 0 [show [who] of myself show family_count]
+        ; max distance = 20
         let family_distance_weighed family_distance_weight * family_count * family_count
 
-        let gdp_weighed gdp_weight * gdp * gdp
+        ; max (3000-gdp) / 100 = 25
+        let gdp_weighed gdp_weight * ((3000 - gdp) / 100) * ((3000 - gdp) / 100)
 
         let value sqrt(distance_weighed + openness_weighed + family_distance_weighed + gdp_weighed)
         set desired_list lput value desired_list
@@ -481,7 +485,7 @@ agression_level
 agression_level
 0
 100
-10.0
+100.0
 1
 1
 NIL
@@ -1082,7 +1086,7 @@ false
 Polygon -7500403 true true 270 75 225 30 30 225 75 270
 Polygon -7500403 true true 30 75 75 30 270 225 225 270
 @#$#@#$#@
-NetLogo 6.0.4
+NetLogo 6.3.0
 @#$#@#$#@
 @#$#@#$#@
 @#$#@#$#@
