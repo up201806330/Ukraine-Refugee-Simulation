@@ -217,9 +217,9 @@ to new-refugees
     set family_size max list ((random (max_family_size * 2)) - max_family_size) 0
     set family_remaining family_size
     set leaving_delay random max_leaving_delay
-    set openness_weight 1 + random max_openness_weight
-    set distance_weight 1 + random max_distance_weight
-    set family_distance_weight 1 + random max_family_distance_weight
+    set openness_weight 1 + random (max_openness_weight - 1)
+    set distance_weight 1 + random (max_distance_weight - 1)
+    set family_distance_weight 1 + random (max_family_distance_weight - 1)
     set gdp_weight 1 + random max_gdp_weight
     ; visuals
     set shape "person"
@@ -519,9 +519,9 @@ ticks
 
 BUTTON
 18
-327
+383
 214
-360
+416
 NIL
 setup
 NIL
@@ -773,7 +773,7 @@ max_gdp_weight
 max_gdp_weight
 1
 100
-1.0
+5.0
 1
 1
 NIL
@@ -788,7 +788,7 @@ max_family_distance_weight
 max_family_distance_weight
 1
 100
-1.0
+30.0
 1
 1
 NIL
@@ -803,7 +803,7 @@ max_openness_weight
 max_openness_weight
 1
 100
-1.0
+5.0
 1
 1
 NIL
@@ -818,7 +818,7 @@ max_distance_weight
 max_distance_weight
 1
 100
-100.0
+10.0
 1
 1
 NIL
@@ -840,6 +840,17 @@ true
 true
 "" "ask countries with [not is_starting_country?][\n  create-temporary-plot-pen (word who)\n  set-plot-pen-color color\n  plotxy ticks accepted_number\n]"
 PENS
+
+INPUTBOX
+18
+317
+214
+377
+input_file
+NIL
+1
+0
+String
 
 @#$#@#$#@
 ## WHAT IS IT?
