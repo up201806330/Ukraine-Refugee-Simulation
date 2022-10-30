@@ -57,6 +57,11 @@ refugees-own[
   departed?
   arrived?
   leaving_delay
+
+  openness_weight
+  distance_weight
+  family_distance_weight
+  gdp_weight
 ]
 
 
@@ -75,6 +80,10 @@ to setup
 end
 
 to setup-interface
+  ; reset runtime interface
+  set agression_level 10
+  set mandatory_military false
+
   set show_family_links? false
   Toggle-show-links
 
@@ -89,7 +98,7 @@ to setup-refugees
 end
 
 to setup-countries
-  set max_leaving_delay 300
+  set max_leaving_delay 3000
   set max_population 3000
   set min_population 200
 
@@ -209,9 +218,13 @@ to new-refugees
     set gender one-of gender_list
     set target_country nobody
     set visited_countries []
-    set family_size max list ((random max_family_size * 2) - max_family_size) 0
+    set family_size max list ((random (max_family_size * 2)) - max_family_size) 0
     set family_remaining family_size
     set leaving_delay random max_leaving_delay
+    set openness_weight 1 + random (max_openness_weight - 1)
+    set distance_weight 1 + random (max_distance_weight - 1)
+    set family_distance_weight 1 + random (max_family_distance_weight - 1)
+    set gdp_weight 1 + random max_gdp_weight
     ; visuals
     set shape "person"
     ifelse gender = "Male"[
@@ -314,8 +327,13 @@ to choose_country
   ask refugees with [moving? and target_country = nobody] [
     let refugees_visited_countries visited_countries
     let family my-family-links
-
+    let temp_openness_weight openness_weight
+    let temp_distance_weight distance_weight
+    let temp_gdp_weight gdp_weight
+    let temp_family_distance_weight family_distance_weight
+    let temp_family_size family_size
     let desired_list []
+    let country_list []
     ask countries[
       let this_country self
 
@@ -326,10 +344,10 @@ to choose_country
       and not (member? self refugees_visited_countries)[
 
         ; max population_unreceptiveness - 70 = 30
-        let openness_weighed (1 / openness_weight) * (population_unreceptiveness - 70) * (population_unreceptiveness - 70)
+        let openness_weighed temp_openness_weight * ((population_unreceptiveness - 70) / 30) * ((population_unreceptiveness - 70) / 30)
 
         let distance_to_refugee distance self
-        let distance_weighed (1 / distance_weight) * distance_to_refugee * distance_to_refugee
+        let distance_weighed temp_distance_weight * (distance_to_refugee / 40) * (distance_to_refugee / 40)
 
         ; if a family-at-link exists between this country and refugee
         let family_count 0
@@ -340,36 +358,42 @@ to choose_country
         ]
 
         ;if family_count > 0 [show [who] of myself show family_count]
-        let family_distance_weighed (1 / family_distance_weight) * family_count * family_count
+        ; max distance = 5
+        let family_distance_weighed 0
+        if temp_family_size > 0 [
+          set family_distance_weighed temp_family_distance_weight * (family_count / temp_family_size) * (family_count / temp_family_size)
+        ]
 
         ; max (3000-gdp) / 100 = 25
-        let gdp_weighed (1 / gdp_weight) * ((3000 - gdp) / 100) * ((3000 - gdp) / 100)
+        let gdp_weighed  temp_gdp_weight * ((3000 - gdp) / 2500) * ((3000 - gdp) / 2500)
 
         let value sqrt(distance_weighed + openness_weighed + family_distance_weighed + gdp_weighed)
         set desired_list lput value desired_list
+        set country_list lput this_country country_list
       ][
-        ; baseline desireness
-        set desired_list lput 10000 desired_list
+          ; baseline desireness
+          set desired_list lput 10000 desired_list
+          set country_list lput this_country  country_list
+        ]
       ]
-    ]
 
-    ; target country will be the one with lowest value in desired_list
-    let desired_index min desired_list
-    let desired_country position desired_index desired_list
-    set target_country country desired_country
+      ; target country will be the one with lowest value in desired_list
+      let desired_index min desired_list
+      let desired_country position desired_index desired_list
+      set target_country (item desired_country country_list)
 
-    ; update family links
-    if target_country != nobody [
-      ask my-family-links [
-        ; if both ends of the link have different target countries, they are separated
-        if [target_country] of other-end != [target_country] of myself [
-          set separated? true
-          set color red
-          set thickness 0.1
+      ; update family links
+      if target_country != nobody [
+        ask my-family-links [
+          ; if both ends of the link have different target countries, they are separated
+          if [target_country] of other-end != [target_country] of myself [
+            set separated? true
+            set color red
+            set thickness 0.1
+          ]
         ]
       ]
     ]
-  ]
 end
 
 to accept-refugee
@@ -471,21 +495,21 @@ to Toggle-show-links
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
-266
-10
-703
-448
+281
+27
+696
+443
 -1
 -1
-13.0
+12.33333333333334
 1
 10
 1
 1
 1
 0
-1
-1
+0
+0
 1
 -16
 16
@@ -498,10 +522,10 @@ ticks
 30.0
 
 BUTTON
-17
-292
-213
-325
+18
+383
+214
+416
 NIL
 setup
 NIL
@@ -570,28 +594,11 @@ refugee_population
 refugee_population
 200
 3000
-1500.0
+2700.0
 500
 1
 NIL
 HORIZONTAL
-
-PLOT
-268
-456
-468
-644
-Accepted Refugees
-Time
-NIL
-0.0
-10.0
-0.0
-10.0
-true
-true
-"" "ask countries with [not is_starting_country?][\n  create-temporary-plot-pen (word who)\n  set-plot-pen-color color\n  plotxy ticks accepted_number\n]"
-PENS
 
 SWITCH
 49
@@ -613,7 +620,7 @@ max_family_size
 max_family_size
 0
 5
-3.0
+5.0
 1
 1
 NIL
@@ -671,51 +678,6 @@ false
 PENS
 "default" 1.0 0 -5825686 true "" "plot total_refugees_departed"
 
-SLIDER
-17
-129
-50
-281
-distance_weight
-distance_weight
-1
-50
-10.0
-1
-1
-NIL
-VERTICAL
-
-SLIDER
-70
-130
-103
-283
-openness_weight
-openness_weight
-1
-50
-5.0
-1
-1
-NIL
-VERTICAL
-
-SLIDER
-124
-130
-157
-283
-family_distance_weight
-family_distance_weight
-1
-50
-30.0
-1
-1
-NIL
-VERTICAL
-
 PLOT
 269
 652
@@ -732,21 +694,6 @@ true
 true
 "" "ask countries with [not is_starting_country?][\n  create-temporary-plot-pen (word who)\n  set-plot-pen-color color\n  plotxy ticks refused_number\n]"
 PENS
-
-SLIDER
-177
-130
-210
-283
-gdp_weight
-gdp_weight
-1
-50
-5.0
-1
-1
-NIL
-VERTICAL
 
 PLOT
 477
@@ -821,11 +768,88 @@ map [\n  x -> [(round ((distance country number_receiving_countries) * 100)) / 1
 1
 11
 
-INPUTBOX
+SLIDER
+177
+130
+210
+304
+max_gdp_weight
+max_gdp_weight
+1
+100
+5.0
+1
+1
+NIL
+VERTICAL
+
+SLIDER
+124
+130
+157
+304
+max_family_distance_weight
+max_family_distance_weight
+1
+100
+30.0
+1
+1
+NIL
+VERTICAL
+
+SLIDER
+70
+130
+103
+305
+max_openness_weight
+max_openness_weight
+1
+100
+5.0
+1
+1
+NIL
+VERTICAL
+
+SLIDER
 17
-332
+129
+50
+309
+max_distance_weight
+max_distance_weight
+1
+100
+10.0
+1
+1
+NIL
+VERTICAL
+
+PLOT
+268
+457
+468
+645
+Accepted Refugees
+NIL
+NIL
+0.0
+10.0
+0.0
+10.0
+true
+true
+"" "ask countries with [not is_starting_country?][\n  create-temporary-plot-pen (word who)\n  set-plot-pen-color color\n  plotxy ticks accepted_number\n]"
+PENS
+
+INPUTBOX
+18
+317
 214
-392
+377
 input_file
 NIL
 1
