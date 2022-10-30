@@ -1,14 +1,20 @@
 globals [
   show_family_links?
   transparent
-  max_leaving_delay
   max_age
   max_refugee_number
   total_refugees_departed
-  max_population
-  min_population
   gender_list
   first_refugee_wave
+
+  max_leaving_delay
+  max_population
+  min_population
+
+  gdp_min
+  gdp_max
+  pop_un_min
+  pop_un_max
 ]
 
 ;; agents
@@ -87,6 +93,11 @@ to setup-countries
   set max_population 3000
   set min_population 200
 
+  set gdp_min 500
+  set gdp_max 3000
+  set pop_un_min 30
+  set pop_un_max 70
+
   let locations_list []
   let gdp_list []
   let population_unreceptiveness_list []
@@ -150,8 +161,8 @@ to setup-countries
       set max_refugees round (population / total_population * refugee_population * 0.9)
 
       ifelse random_params? [
-        set gdp 500 + (random (3000 - 500))
-        set population_unreceptiveness ((random 30) + 70)
+        set gdp gdp_min + (random (gdp_max - gdp_min))
+        set population_unreceptiveness pop_un_min + (random (pop_un_max - pop_un_min))
       ][
         set gdp item i gdp_list
         set population_unreceptiveness item i population_unreceptiveness_list
