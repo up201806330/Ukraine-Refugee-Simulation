@@ -80,6 +80,10 @@ to setup
 end
 
 to setup-interface
+  ; reset runtime interface
+  set agression_level 10
+  set mandatory_military false
+
   set show_family_links? false
   Toggle-show-links
 
@@ -603,7 +607,7 @@ SWITCH
 690
 mandatory_military
 mandatory_military
-0
+1
 1
 -1000
 
