@@ -5,8 +5,6 @@ globals [
   max_age
   max_refugee_number
   total_refugees_departed
-  color_list
-  population_list
   max_population
   min_population
   gender_list
@@ -59,6 +57,8 @@ refugees-own[
 to setup
   clear-all
   reset-ticks
+  file-close-all
+
   setup-refugees
   setup-countries
   new-refugees
@@ -86,21 +86,57 @@ to setup-countries
   set max_leaving_delay 300
   set max_population 3000
   set min_population 200
-  set color_list []
-  set population_list []
 
-  ask n-of number_receiving_countries patches with [
-    distancexy 0 0 > 4 and abs pxcor < (max-pxcor - 1) and
-    abs pycor < (max-pycor - 1)
-  ] [
-    set population_list lput (min_population + (random (max_population - min_population))) population_list
-    set color_list lput ((3 + random-float 6) + (10 * random 14)) color_list
-    sprout-countries 1 [
-      set shape "box"
-      set size 2
-      ;set accepted_number 0
-      ;set population_unreceptiveness false
+  let locations_list []
+  let gdp_list []
+  let population_unreceptiveness_list []
+  let color_list []
+  let population_list []
+
+  ;; load input scenario from file
+  let random_params? input_file = ""
+  if not random_params? [
+    file-open (word "inputs/" input_file)
+    set locations_list file-read
+    set gdp_list file-read
+    set population_list file-read
+    set population_unreceptiveness_list file-read
+  ]
+
+  let j 0
+
+  let patches_list []
+  ifelse random_params?[
+    let patches_agentset n-of number_receiving_countries patches with [
+      distancexy 0 0 > 4 and abs pxcor < (max-pxcor - 1) and
+      abs pycor < (max-pycor - 1)
     ]
+    set patches_list [self] of patches_agentset
+  ][
+    set patches_list map [
+      coordinates -> patches with [
+        pxcor = item 0 coordinates and
+        pycor = item 1 coordinates
+      ]
+    ] locations_list
+  ]
+  foreach patches_list [
+    this_patch -> (
+      ask this_patch [
+        ; in order to get patches by input file order
+
+        set color_list lput ((3 + random-float 6) + (10 * random 14)) color_list
+        if random_params? [
+          set population_list lput (min_population + (random (max_population - min_population))) population_list
+        ]
+
+        sprout-countries 1 [
+          set shape "box"
+          set size 2
+        ]
+        set j j + 1
+      ]
+    )
   ]
   let total_population sum population_list
 
@@ -112,10 +148,17 @@ to setup-countries
 
       set population item i population_list
       set max_refugees round (population / total_population * refugee_population * 0.9)
-      set gdp 500 + (random (3000 - 500))
-      set population_unreceptiveness ((random 30) + 70)
-      set first_update False
-      set second_update False
+
+      ifelse random_params? [
+        set gdp 500 + (random (3000 - 500))
+        set population_unreceptiveness ((random 30) + 70)
+      ][
+        set gdp item i gdp_list
+        set population_unreceptiveness item i population_unreceptiveness_list
+      ]
+
+      set first_update false
+      set second_update false
       set accepted_number 0
       set refused_number 0
       set is_starting_country? false
@@ -179,7 +222,10 @@ to new-refugees
     if count possible_family_members <= 0 [stop]
 
     set family_remaining 0
-    let random_refugees (n-of family_size possible_family_members)
+    let random_refugees possible_family_members
+    if family_size <= count possible_family_members [
+      set random_refugees (n-of family_size possible_family_members)
+    ]
 
     create-family-links-with random_refugees [
       set color transparent
@@ -238,15 +284,15 @@ to review-policies
   ask countries [
     if not is_starting_country? [
       if (accepted_number / max_refugees) > 0.5 [
-        if(first_update != True) [
+        if(first_update != true) [
           set max_refugees (max_refugees * (1 / (population_unreceptiveness / 100)))
-          set first_update True
+          set first_update true
         ]
       ]
       if (accepted_number / max_refugees) > 0.75 [
-        if(second_update != True) [
+        if(second_update != true) [
           set max_refugees (max_refugees * (1 / (population_unreceptiveness / 100)))
-          set second_update True
+          set second_update true
         ]
       ]
     ]
@@ -271,7 +317,6 @@ to choose_country
         ; max population_unreceptiveness - 70 = 30
         let openness_weighed (1 / openness_weight) * (population_unreceptiveness - 70) * (population_unreceptiveness - 70)
 
-        ; max distance = 20
         let distance_to_refugee distance self
         let distance_weighed (1 / distance_weight) * distance_to_refugee * distance_to_refugee
 
@@ -284,7 +329,6 @@ to choose_country
         ]
 
         ;if family_count > 0 [show [who] of myself show family_count]
-        ; max distance = 20
         let family_distance_weighed (1 / family_distance_weight) * family_count * family_count
 
         ; max (3000-gdp) / 100 = 25
@@ -485,7 +529,7 @@ agression_level
 agression_level
 0
 100
-100.0
+10.0
 1
 1
 NIL
@@ -765,6 +809,17 @@ map [\n  x -> [(round ((distance country number_receiving_countries) * 100)) / 1
 3
 1
 11
+
+INPUTBOX
+17
+332
+214
+392
+input_file
+NIL
+1
+0
+String
 
 @#$#@#$#@
 ## WHAT IS IT?
@@ -1108,7 +1163,7 @@ false
 Polygon -7500403 true true 270 75 225 30 30 225 75 270
 Polygon -7500403 true true 30 75 75 30 270 225 225 270
 @#$#@#$#@
-NetLogo 6.3.0
+NetLogo 6.0.4
 @#$#@#$#@
 @#$#@#$#@
 @#$#@#$#@
