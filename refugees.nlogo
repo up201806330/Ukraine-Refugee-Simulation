@@ -269,11 +269,11 @@ to choose_country
       and not (member? self refugees_visited_countries)[
 
         ; max population_unreceptiveness - 70 = 30
-        let openness_weighed openness_weight * (population_unreceptiveness - 70) * (population_unreceptiveness - 70)
+        let openness_weighed (1 / openness_weight) * (population_unreceptiveness - 70) * (population_unreceptiveness - 70)
 
         ; max distance = 20
         let distance_to_refugee distance self
-        let distance_weighed distance_weight * distance_to_refugee * distance_to_refugee
+        let distance_weighed (1 / distance_weight) * distance_to_refugee * distance_to_refugee
 
         ; if a family-at-link exists between this country and refugee
         let family_count 0
@@ -285,16 +285,16 @@ to choose_country
 
         ;if family_count > 0 [show [who] of myself show family_count]
         ; max distance = 20
-        let family_distance_weighed family_distance_weight * family_count * family_count
+        let family_distance_weighed (1 / family_distance_weight) * family_count * family_count
 
         ; max (3000-gdp) / 100 = 25
-        let gdp_weighed gdp_weight * ((3000 - gdp) / 100) * ((3000 - gdp) / 100)
+        let gdp_weighed (1 / gdp_weight) * ((3000 - gdp) / 100) * ((3000 - gdp) / 100)
 
         let value sqrt(distance_weighed + openness_weighed + family_distance_weighed + gdp_weighed)
         set desired_list lput value desired_list
       ][
         ; baseline desireness
-        set desired_list lput 1000 desired_list
+        set desired_list lput 10000 desired_list
       ]
     ]
 
@@ -741,6 +741,28 @@ MONITOR
 Places Left
 map [\n  x -> [round (max_refugees - accepted_number) + 1] of x\n] sort-on [who] countries with [not is_starting_country?]
 17
+1
+11
+
+MONITOR
+710
+167
+954
+212
+Population
+map [\n  x -> [population] of x\n] sort-on [who] countries with [not is_starting_country?]
+17
+1
+11
+
+MONITOR
+710
+219
+954
+264
+Distance origin country
+map [\n  x -> [(round ((distance country number_receiving_countries) * 100)) / 100] of x\n] sort-on [who] countries with [not is_starting_country?]
+3
 1
 11
 
