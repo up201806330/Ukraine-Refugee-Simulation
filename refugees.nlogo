@@ -50,6 +50,7 @@ refugees-own[
   target_country
   visited_countries
   likeliness_of_staying
+  min_likeliness_of_staying
   family_size
   family_remaining
 
@@ -98,7 +99,7 @@ to setup-refugees
 end
 
 to setup-countries
-  set max_leaving_delay 3000
+  set max_leaving_delay 1000
   set max_population 3000
   set min_population 200
 
@@ -214,6 +215,7 @@ to new-refugees
     set arrived? false
     set departed? false
     set likeliness_of_staying random 100
+    set min_likeliness_of_staying random likeliness_of_staying
     set age random max_age
     set gender one-of gender_list
     set target_country nobody
@@ -264,7 +266,9 @@ to review_refugees
   ask refugees[
     ; if refugee hasn't left yet
     if not arrived? and not moving? [
-      ; set likeliness_of_staying likeliness_of_staying - 0.1
+      if likeliness_of_staying > min_likeliness_of_staying[
+        set likeliness_of_staying likeliness_of_staying - random-float 0.005
+      ]
       ifelse likeliness_of_staying < agression_level[
         ; mandatory enrollment prevents young males from leaving
         ifelse ( mandatory_military = true) and (gender = "Male") and (age > 18) and (age < 65) [
@@ -309,13 +313,13 @@ to review-policies
     if not is_starting_country? [
       if (accepted_number / max_refugees) > 0.5 [
         if(first_update != true) [
-          set max_refugees (max_refugees * (1 / (population_unreceptiveness / 100)))
+          set max_refugees round(max_refugees * (1 / (population_unreceptiveness / 100)))
           set first_update true
         ]
       ]
       if (accepted_number / max_refugees) > 0.75 [
         if(second_update != true) [
-          set max_refugees (max_refugees * (1 / (population_unreceptiveness / 100)))
+          set max_refugees round(max_refugees * (1 / (population_unreceptiveness / 100)))
           set second_update true
         ]
       ]
@@ -341,7 +345,9 @@ to choose_country
       ; refugees can only move to a country other than their home
       not is_starting_country?
       ; refugees won't reattempt to enter a visited country
-      and not (member? self refugees_visited_countries)[
+      and not (member? self refugees_visited_countries)
+      ; if country is full nobody will choose it anymore
+      and max_refugees - accepted_number > 0[
 
         ; max population_unreceptiveness - 70 = 30
         let openness_weighed temp_openness_weight * ((population_unreceptiveness - 70) / 30) * ((population_unreceptiveness - 70) / 30)
@@ -361,7 +367,7 @@ to choose_country
         ; max distance = 5
         let family_distance_weighed 0
         if temp_family_size > 0 [
-          set family_distance_weighed temp_family_distance_weight * (family_count / temp_family_size) * (family_count / temp_family_size)
+          set family_distance_weighed temp_family_distance_weight * ((temp_family_size - family_count) / temp_family_size) * ((temp_family_size - family_count) / temp_family_size)
         ]
 
         ; max (3000-gdp) / 100 = 25
@@ -479,7 +485,7 @@ to update-label
         set label round max_refugee_number
       ]
     ][
-      set label round max_refugees - accepted_number + 1
+      set label round max_refugees - accepted_number
     ]
   ]
 end
@@ -593,8 +599,8 @@ SLIDER
 refugee_population
 refugee_population
 200
-3000
-2700.0
+3200
+3200.0
 500
 1
 NIL
@@ -700,7 +706,7 @@ PLOT
 653
 675
 841
-Asylum Requests Denied
+Tries until accepted
 Nr. Tries
 NIL
 0.0
@@ -741,7 +747,7 @@ MONITOR
 953
 160
 Places Left
-map [\n  x -> [round (max_refugees - accepted_number) + 1] of x\n] sort-on [who] countries with [not is_starting_country?]
+map [\n  x -> [round (max_refugees - accepted_number)] of x\n] sort-on [who] countries with [not is_starting_country?]
 17
 1
 11
@@ -777,7 +783,7 @@ max_gdp_weight
 max_gdp_weight
 1
 100
-5.0
+25.0
 1
 1
 NIL
@@ -792,7 +798,7 @@ max_family_distance_weight
 max_family_distance_weight
 1
 100
-30.0
+100.0
 1
 1
 NIL
@@ -807,7 +813,7 @@ max_openness_weight
 max_openness_weight
 1
 100
-5.0
+25.0
 1
 1
 NIL
@@ -822,7 +828,7 @@ max_distance_weight
 max_distance_weight
 1
 100
-10.0
+25.0
 1
 1
 NIL
@@ -851,7 +857,7 @@ INPUTBOX
 214
 377
 input_file
-NIL
+1
 1
 0
 String
@@ -1198,7 +1204,7 @@ false
 Polygon -7500403 true true 270 75 225 30 30 225 75 270
 Polygon -7500403 true true 30 75 75 30 270 225 225 270
 @#$#@#$#@
-NetLogo 6.0.4
+NetLogo 6.3.0
 @#$#@#$#@
 @#$#@#$#@
 @#$#@#$#@
