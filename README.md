@@ -12,5 +12,3 @@
     - Maria Aurora Bota ([up202111378@edu.fe.up.pt](mailto:up202111378@edu.fe.up.pt))
     - [Rafael Soares Ribeiro](https://github.com/up201806330) (<up201806330@fe.up.pt>)
     - [Xavier Ruivo Pisco](https://github.com/Xavier-Pisco) ([up201806134@edu.fe.up.pt](mailto:up201806134@edu.fe.up.pt))
-
-In order to use to premade setup put a 1 in the input_file box.
