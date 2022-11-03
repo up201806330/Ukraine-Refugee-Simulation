@@ -6,7 +6,7 @@
 - **Tools:** Logo, piStar
 - **Institution:** [UT](https://www.utwente.nl/)
 - **Course:** [MAS](https://osiris.utwente.nl/student/OnderwijsCatalogusSelect.do?selectie=cursus&cursus=192320601&collegejaar=2022&taal=en) (Multi-Agent Systems)
-- **Project grade:** ?/20
+- **Project grade:** ?/10
 - **Group members:**
     - [Dion van Rijswick](https://github.com/Dion2809)
     - [Frederico Lopes](https://github.com/Frederico-lp) (<up201904580@edu.fe.up.pt>)
